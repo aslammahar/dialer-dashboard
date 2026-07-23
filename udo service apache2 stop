@@ -1,0 +1,14 @@
+[0;1;31m×[0m apache2.service - The Apache HTTP Server
+     Loaded: loaded (/lib/systemd/system/apache2.service; enabled; vendor preset: enabled)
+     Active: [0;1;31mfailed[0m (Result: exit-code) since Thu 2024-01-25 17:50:56 GMT; 20s ago
+       Docs: https://httpd.apache.org/docs/2.4/
+    Process: 19718 ExecStart=/usr/sbin/apachectl start [0;1;31m(code=exited, status=1/FAILURE)[0m
+        CPU: 29ms
+
+Jan 25 17:50:56 sub.bicodev.com systemd[1]: Starting The Apache HTTP Server...
+Jan 25 17:50:56 sub.bicodev.com apachectl[19721]: apache2: Syntax error on line 225 of /etc/apache2/apache2.conf: Syntax error on line 3 of /etc/apache2/sites-enabled/000-default.conf: Expected </IfModule> but saw </VirtualHost>
+Jan 25 17:50:56 sub.bicodev.com apachectl[19718]: Action 'start' failed.
+Jan 25 17:50:56 sub.bicodev.com apachectl[19718]: The Apache error log may have more information.
+Jan 25 17:50:56 sub.bicodev.com systemd[1]: [0;1;39m[0;1;31m[0;1;39mapache2.service: Control process exited, code=exited, status=1/FAILURE[0m
+Jan 25 17:50:56 sub.bicodev.com systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mapache2.service: Failed with result 'exit-code'.[0m
+Jan 25 17:50:56 sub.bicodev.com systemd[1]: [0;1;31m[0;1;39m[0;1;31mFailed to start The Apache HTTP Server.[0m

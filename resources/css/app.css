@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+:root {
+    /* Core palette */
+    --crm-bg-primary: #54508C;
+    --crm-bg-sidebar: #2F2E5E;
+    --crm-bg-content: #AAB7C6;
+    --crm-bg-card: #F4F4F4;
+    --crm-bg-card-dark: #2F2E5E;
+    --crm-accent: #FF9F1C;
+
+    /* Text system */
+    --crm-text-on-primary: #F5F7FF;
+    --crm-text-on-sidebar: #C9D2FF;
+    --crm-text-muted: #8D98B0;
+    --crm-text-main: #202547;
+    --crm-text-on-card-dark: #E9EEFF;
+
+    /* Interactive states */
+    --crm-hover-sidebar: #3D3B73;
+    --crm-hover-card: #E9ECF2;
+    --crm-active-soft: rgba(255, 159, 28, 0.18);
+
+    /* Chart colors */
+    --crm-chart-1: #FF9F1C;
+    --crm-chart-2: #2F2E5E;
+    --crm-chart-3: #4F8CC9;
+    --crm-chart-4: #8F79D8;
+    --crm-chart-track: #D3D9E4;
+}
+
+body {
+    font-family: 'Lato', Arial, sans-serif;
+    background: var(--crm-bg-primary);
+    color: var(--crm-text-main);
+}

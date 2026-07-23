@@ -1,0 +1,35 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews
+    </IfModule>
+
+    RewriteEngine On
+
+    # Redirect all requests to the public directory
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ /public/$1 [L]
+
+    # Handle Laravel routes
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+# remove  public from laravel 
+
+# disable directory listing
+Options -Indexes
+# block files which need to be hidden
+<FilesMatch "\.(git|env|json|config.js|md|gitignore|gitattributes|lock|example|log|ini|phar|sh|sql)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+#here specify full file name separator '|'
+<Files ~ "(artisan)$">
+    Order allow,deny
+    Deny from all
+</Files>
+
+
+RewriteEngine On
+RewriteRule ^(.*)$ public/$1 [L]
