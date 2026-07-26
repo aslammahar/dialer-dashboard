@@ -1173,4 +1173,128 @@ public function activeClosersDialerStats(array $dialerLeaderboard): array
         'avg_talk_time' => $this->secondsToHms($avgTalkSeconds),
     ];
 }
+
+/**
+ * One row per closer (not per closer+client) — MTD/SPD/Level/GI/Level%/Avg
+ * Pre aggregated across ALL their clients, with a per-client APPROVED
+ * count as extra columns. This is what the pivot table on the
+ * Client-Wise page needs (team-wise already does this per team).
+ */
+public function closerClientMatrix(?string $from = null, ?string $to = null): array
+{
+    $from = $from ?? now()->startOfMonth()->toDateString();
+    $to   = $to ?? now()->toDateString();
+
+    $entries = DailySalesEntry::with(['closer', 'client'])
+        ->whereBetween('entry_date', [$from, $to])
+        ->get();
+
+    $clientNames = \App\Models\SalesClient::orderBy('name')->pluck('name')->all();
+
+    $rows = $entries
+        ->groupBy('sales_closer_id')
+        ->map(function ($rows) use ($clientNames) {
+            $closer = $rows->first()->closer;
+            $approved = $rows->where('status', 'approved');
+            $levelCount = $approved->where('sale_type', 'level')->count();
+            $mtd = $approved->count();
+            $workingDays = $rows->pluck('entry_date')->map(fn ($d) => $d->toDateString())->unique()->count();
+
+            $clientCounts = [];
+            foreach ($clientNames as $clientName) {
+                // Approved-only count for this client — pending never counted here
+                $clientCounts[$clientName] = $approved
+                    ->filter(fn ($e) => optional($e->client)->name === $clientName)
+                    ->count();
+            }
+
+            return [
+                'closer'       => $closer->name ?? 'Unknown',
+                'working_days' => $workingDays,
+                'mtd'          => $mtd,
+                'spd'          => $workingDays > 0 ? round($mtd / $workingDays, 1) : 0,
+                'level'        => $levelCount,
+                'gi'           => $approved->where('sale_type', 'gi')->count(),
+                'level_pct'    => $mtd > 0 ? round(($levelCount / $mtd) * 100) : 0,
+                'avg_pre'      => $approved->avg('avg_pre') ? round($approved->avg('avg_pre'), 2) : 0,
+                'clients'      => $clientCounts,
+            ];
+        })
+        ->sortByDesc('mtd')
+        ->values()
+        ->all();
+
+    return ['rows' => $rows, 'clients' => $clientNames];
+}
+
+/**
+ * One row per closer (not per closer+carrier) — MTD/SPD/Level/GI/Level%/
+ * Avg Pre aggregated across ALL their carriers, with per-carrier APPROVED
+ * counts as extra columns, plus merged dialer stats (calls/conversion/
+ * talk time) at the closer level.
+ */
+public function closerCarrierMatrix(?string $from = null, ?string $to = null, array $dialerLeaderboard = []): array
+{
+    $from = $from ?? now()->startOfMonth()->toDateString();
+    $to   = $to ?? now()->toDateString();
+
+    $entries = DailySalesEntry::with(['closer', 'carrier'])
+        ->whereBetween('entry_date', [$from, $to])
+        ->get();
+
+    $carrierNames = \App\Models\SalesCarrier::orderBy('name')->pluck('name')->all();
+
+    $exactLookup = [];
+    $firstNameLookup = [];
+    foreach ($dialerLeaderboard as $agent) {
+        $fullName = strtolower(trim($agent['name']));
+        $firstName = strtolower(trim(explode(' ', $agent['name'])[0]));
+        $exactLookup[$fullName] = $agent;
+        if (! isset($firstNameLookup[$firstName]) || $agent['calls'] > $firstNameLookup[$firstName]['calls']) {
+            $firstNameLookup[$firstName] = $agent;
+        }
+    }
+
+    $rows = $entries
+        ->groupBy('sales_closer_id')
+        ->map(function ($rows) use ($carrierNames, $exactLookup, $firstNameLookup) {
+            $closer = $rows->first()->closer;
+            $approved = $rows->where('status', 'approved');
+            $levelCount = $approved->where('sale_type', 'level')->count();
+            $mtd = $approved->count();
+            $workingDays = $rows->pluck('entry_date')->map(fn ($d) => $d->toDateString())->unique()->count();
+
+            $carrierCounts = [];
+            foreach ($carrierNames as $carrierName) {
+                $carrierCounts[$carrierName] = $approved
+                    ->filter(fn ($e) => optional($e->carrier)->name === $carrierName)
+                    ->count();
+            }
+
+            $closerName = strtolower(trim($closer->name ?? ''));
+            $firstName = strtolower(trim(explode(' ', $closer->name ?? '')[0]));
+            $match = $exactLookup[$closerName] ?? $firstNameLookup[$firstName] ?? null;
+            $calls = $match['calls'] ?? 0;
+
+            return [
+                'closer'        => $closer->name ?? 'Unknown',
+                'working_days'  => $workingDays,
+                'mtd'           => $mtd,
+                'spd'           => $workingDays > 0 ? round($mtd / $workingDays, 1) : 0,
+                'level'         => $levelCount,
+                'gi'            => $approved->where('sale_type', 'gi')->count(),
+                'level_pct'     => $mtd > 0 ? round(($levelCount / $mtd) * 100) : 0,
+                'avg_pre'       => $approved->avg('avg_pre') ? round($approved->avg('avg_pre'), 2) : 0,
+                'avatar_calls'  => $calls,
+                'conversion'    => $calls > 0 ? round(($mtd / $calls) * 100, 1) : 0,
+                'avg_talk_time' => $match['avg_talk_time'] ?? '-',
+                'carriers'      => $carrierCounts,
+            ];
+        })
+        ->sortByDesc('mtd')
+        ->values()
+        ->all();
+
+    return ['rows' => $rows, 'carriers' => $carrierNames];
+}
 }

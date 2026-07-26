@@ -2977,3 +2977,4 @@ Route::post('/sales-teams/set-target', [SalesLookupController::class, 'setTeamTa
 
 Route::delete('/sales-closers/{closer}', [SalesCloserController::class, 'destroy'])->name('sales-closers.destroy');
 Route::get('/dialer-leaderboard', [DialerDashboardController::class, 'leaderboardPage'])->name('dialer-leaderboard');
+

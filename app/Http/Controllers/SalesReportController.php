@@ -2867,15 +2867,16 @@ public function clientWise(Request $request)
     [$from, $to, $range, $month] = $this->resolveDateRange($request);
 
     $salesService = app(SalesService::class);
+    $matrix = $salesService->closerClientMatrix($from, $to);
 
     return view('sales-reports.client-wise', [
         'month'   => $month,
         'range'   => $range,
         'summary' => $salesService->monthlyClientsReport($from, $to),
-        'rows'    => $salesService->clientWiseFlatReport($from, $to),
-        'canEdit' => $this->canEdit()
+        'rows'    => $matrix['rows'],
+        'clients' => $matrix['clients'],
+        'canEdit' => $this->canEdit(),
     ]);
-
 }
 
 public function carrierWise(Request $request)
@@ -2883,7 +2884,6 @@ public function carrierWise(Request $request)
     [$from, $to, $range, $month] = $this->resolveDateRange($request);
 
     $salesService = app(SalesService::class);
-    $rows = $salesService->carrierWiseFlatReport($from, $to);
 
     $leaderboard = [];
     try {
@@ -2891,14 +2891,16 @@ public function carrierWise(Request $request)
     } catch (\Throwable $e) {
         report($e);
     }
-    $rows = $salesService->mergeDialerStatsIntoFlatRows($rows, $leaderboard);
+
+    $matrix = $salesService->closerCarrierMatrix($from, $to, $leaderboard);
 
     return view('sales-reports.carrier-wise', [
-        'month'   => $month,
-        'range'   => $range,
-        'summary' => $salesService->monthlyCarriersReport($from, $to),
-        'rows'    => $rows,
-        'canEdit' => $this->canEdit(),
+        'month'    => $month,
+        'range'    => $range,
+        'summary'  => $salesService->monthlyCarriersReport($from, $to),
+        'rows'     => $matrix['rows'],
+        'carriers' => $matrix['carriers'],
+        'canEdit'  => $this->canEdit(),
     ]);
 }
 

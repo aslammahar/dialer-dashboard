@@ -117,20 +117,10 @@
     <div class="cr-box">
     <div style="font-family:var(--cr-font-display);font-weight:700;font-size:14px;margin-bottom:12px">Detailed Closer × Carrier Breakdown</div>
     <div style="overflow-x:auto">
-        @php
-            $rowsCollection = collect($rows);
-            $carriers = $rowsCollection->pluck('carrier')->unique()->sort()->values();
-
-            $pivot = [];
-            foreach ($rowsCollection as $r) {
-                $pivot[$r['closer']][$r['carrier']] = $r['mtd']; // <-- actual approved value
-            }
-        @endphp
         <table class="cr-table">
             <thead>
                 <tr>
                     <th>Closer</th>
-                    {{-- <th>Carrier</th> --}}
                     <th>Working Days</th>
                     <th>MTD</th>
                     <th>SPD</th>
@@ -139,7 +129,7 @@
                     <th>Level %</th>
                     <th>Avg Pre</th>
                     <th>Avatar/Jcs Calls</th>
-                    <th>Conversion </th>
+                    <th>Conversion</th>
                     <th>Avg Talk Time</th>
                     @foreach($carriers as $carrier)
                         <th>{{ $carrier }}</th>
@@ -150,7 +140,6 @@
                 @forelse($rows as $row)
                     <tr>
                         <td>{{ $row['closer'] }}</td>
-                        {{-- <td>{{ $row['carrier'] }}</td> --}}
                         <td>{{ $row['working_days'] }}</td>
                         <td>{{ $row['mtd'] }}</td>
                         <td>{{ $row['spd'] }}</td>
@@ -158,15 +147,15 @@
                         <td>{{ $row['gi'] }}</td>
                         <td>{{ $row['level_pct'] }}%</td>
                         <td>{{ $row['avg_pre'] }}</td>
-                        <td>{{ $row['avatar_calls'] ?? 0 }}</td>
-                        <td>{{ $row['conversion'] ?? 0 }}</td>
-                        <td>{{ $row['avg_talk_time'] ?? '-' }}</td>
+                        <td>{{ $row['avatar_calls'] }}</td>
+                        <td>{{ $row['conversion'] }}%</td>
+                        <td>{{ $row['avg_talk_time'] }}</td>
                         @foreach($carriers as $carrier)
-                            <td>{{ $pivot[$row['closer']][$carrier] ?? '-' }}</td>
+                            <td>{{ $row['carriers'][$carrier] ?? 0 }}</td>
                         @endforeach
                     </tr>
                 @empty
-                    <tr><td colspan="{{ 9 + $carriers->count() }}" style="text-align:center;color:var(--cr-text-muted);padding:20px">No data for this selection.</td></tr>
+                    <tr><td colspan="{{ 11 + count($carriers) }}" style="text-align:center;color:var(--cr-text-muted);padding:20px">No data for this selection.</td></tr>
                 @endforelse
             </tbody>
         </table>

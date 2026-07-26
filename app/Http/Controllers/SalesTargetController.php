@@ -20,14 +20,17 @@ class SalesTargetController extends Controller
 //     );
 // }
 
-protected function canEdit()
+
+ protected function canEdit()
 {
     return auth()->check() && in_array(auth()->user()->email, [
-        'fazail@jsonscommunications.com',
-        'REPLACE_WITH_SECOND_PERSON_EMAIL@example.com',
+         'fazail@jsonscommunications.com',
+            'm.muzammil@jsonscommunication.com',
+            'ubaid.khan@jsonscommunication.com',
+            'hussamjanjua@jsons.com',
+            'furqankashif@jsons.com',
     ]);
 }
-    
     
    public function edit()
 {
@@ -58,23 +61,25 @@ protected function canEdit()
 }
 
     public function update(Request $request)
-    {
-        $data = $request->validate([
-            'month'               => ['required', 'date'],
-            'raw_target'          => ['required', 'integer', 'min:1'],
-            'spd_target'          => ['required', 'numeric', 'min:0'],
-            'monthly_spd_target'  => ['required', 'numeric', 'min:0'],
-            'reward_headline'     => ['required', 'string', 'max:255'],
-            'milestone_1_label'   => ['required', 'string', 'max:255'],
-            'milestone_2_label'   => ['required', 'string', 'max:255'],
-            'milestone_2_amount'  => ['nullable', 'string', 'max:50'],
-            'milestone_3_label'   => ['required', 'string', 'max:255'],
-        ]);
+{
+    abort_unless($this->canEdit(), 403, 'You do not have permission to make changes.');
 
-        SalesTarget::updateOrCreate(['month' => $data['month']], $data);
+    $data = $request->validate([
+        'month'               => ['required', 'date'],
+        'raw_target'          => ['required', 'integer', 'min:1'],
+        'spd_target'          => ['required', 'numeric', 'min:0'],
+        'monthly_spd_target'  => ['required', 'numeric', 'min:0'],
+        'reward_headline'     => ['required', 'string', 'max:255'],
+        'milestone_1_label'   => ['required', 'string', 'max:255'],
+        'milestone_2_label'   => ['required', 'string', 'max:255'],
+        'milestone_2_amount'  => ['nullable', 'string', 'max:50'],
+        'milestone_3_label'   => ['required', 'string', 'max:255'],
+    ]);
 
-        return redirect()
-            ->route('dialer-dashboard')
-            ->with('status', 'Sales target updated.');
-    }
+    SalesTarget::updateOrCreate(['month' => $data['month']], $data);
+
+    return redirect()
+        ->route('dialer-dashboard')
+        ->with('status', 'Sales target updated.');
+}
 }

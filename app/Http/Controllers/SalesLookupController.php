@@ -14,9 +14,10 @@ class SalesLookupController extends Controller
 {
     abort_unless(
         auth()->check() && in_array(auth()->user()->email, [
-            'm.muzammil@jsons.com',
+            'fazail@jsonscommunications.com',
+            'm.muzammil@jsonscommunication.com',
             'ubaid.khan@jsonscommunication.com',
-            'Hussamjanjua9@gmail.com',
+            'hussamjanjua@jsons.com',
             'furqankashif@jsons.com',
         ]),
         403,

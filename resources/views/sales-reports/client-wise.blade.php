@@ -109,20 +109,10 @@
 <div class="cw-box">
     <div style="font-family:var(--cw-font-display);font-weight:700;font-size:14px;margin-bottom:12px">Detailed Closer × Client Breakdown</div>
     <div style="overflow-x:auto">
-        @php
-            $rowsCollection = collect($rows);
-            $clients = $rowsCollection->pluck('client')->unique()->sort()->values();
-
-            $pivot = [];
-            foreach ($rowsCollection as $r) {
-                $pivot[$r['closer']][$r['client']] = $r['mtd']; // <-- actual approved value
-            }
-        @endphp
         <table class="cw-table">
             <thead>
                 <tr>
                     <th>Closer</th>
-                    {{-- <th>Client</th> --}}
                     <th>Working Days</th>
                     <th>MTD</th>
                     <th>SPD</th>
@@ -139,7 +129,6 @@
                 @forelse($rows as $row)
                     <tr>
                         <td>{{ $row['closer'] }}</td>
-                        {{-- <td>{{ $row['client'] }}</td> --}}
                         <td>{{ $row['working_days'] }}</td>
                         <td>{{ $row['mtd'] }}</td>
                         <td>{{ $row['spd'] }}</td>
@@ -148,11 +137,11 @@
                         <td>{{ $row['level_pct'] }}%</td>
                         <td>{{ $row['avg_pre'] }}</td>
                         @foreach($clients as $client)
-                            <td>{{ $pivot[$row['closer']][$client] ?? '-' }}</td>
+                            <td>{{ $row['clients'][$client] ?? 0 }}</td>
                         @endforeach
                     </tr>
                 @empty
-                    <tr><td colspan="{{ 9 + $clients->count() }}" style="text-align:center;color:var(--cw-text-muted);padding:20px">No data for this month.</td></tr>
+                    <tr><td colspan="{{ 8 + count($clients) }}" style="text-align:center;color:var(--cw-text-muted);padding:20px">No data for this selection.</td></tr>
                 @endforelse
             </tbody>
         </table>

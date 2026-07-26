@@ -99,6 +99,7 @@ class User extends Authenticatable
     public const CENTER_BYPASS_TYPES = [
         'super admin',
        'company',
+       'Director',
     ];
 
     public function canBypassCenterScope(): bool

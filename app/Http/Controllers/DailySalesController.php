@@ -16,9 +16,10 @@ class DailySalesController extends Controller
     abort_unless(
         auth()->check() && in_array(auth()->user()->email, [
             'fazail@jsonscommunications.com',
-            'director@jsonscommunications.com',
-            'ceo@jsonscommunications.com',
-            'REPLACE_WITH_FOURTH_PERSON_EMAIL@example.com',
+           'm.muzammil@jsonscommunication.com',
+    'ubaid.khan@jsonscommunication.com',
+    'hussamjanjua@jsons.com',
+    'furqankashif@jsons.com',
         ]),
         403,
         'You do not have permission to make changes.'

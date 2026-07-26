@@ -264,7 +264,7 @@
     <div class="dd-panel-head">
         <div>
             <div class="dd-panel-title">Teams Summary</div>
-            <div class="dd-panel-sub">This month — Approved / Level / GI / SPD / Target</div>
+            <div class="dd-panel-sub">Today — Approved / Level / GI / SPD / Target</div>
         </div>
         <a href="{{ route('sales-reports.team-wise') }}" class="dd-apply" style="text-decoration:none">Manage Teams</a>
     </div>
@@ -272,9 +272,9 @@
         <table class="dd-lb-table">
          <thead>
     <tr>
-        <th>Team</th><th>Closers</th><th>Approved</th><th>Level</th><th>GI</th>
+        <th>Last Sale</th><th>Team</th><th>Approved</th><th>Level</th><th>GI</th>
         <th>Level %</th><th>SPD</th><th>Avg Pre</th><th>Avg Talk Time</th>
-        <th>Time Since Last Sale</th><th>Target</th><th>Left</th>
+        <th>Target</th><th>Left</th>
     </tr>
 </thead>
 <tbody>
@@ -282,7 +282,6 @@
         <tr>
             <td>{{ $t['last_sale'] }}</td>
             <td>{{ $t['team'] }}</td>
-            <td>{{ $t['closers'] }}</td>
             <td>{{ $t['approved'] }}</td>
             <td>{{ $t['level'] }}</td>
             <td>{{ $t['gi'] }}</td>
@@ -302,7 +301,6 @@
     <tr>
         <td>Total / Avg</td>
         <td>-</td>
-        <td>{{ $teamsSummaryTotals['closers'] }}</td>
         <td>{{ $teamsSummaryTotals['approved'] }}</td>
         <td>{{ $teamsSummaryTotals['level'] }}</td>
         <td>{{ $teamsSummaryTotals['gi'] }}</td>
@@ -323,7 +321,7 @@
     <div class="dd-panel-head">
         <div>
             <div class="dd-panel-title">Clients Summary</div>
-            <div class="dd-panel-sub">This month —  Approved / Level / GI / Target</div>
+            <div class="dd-panel-sub">Today — Approved / Level / GI / Target</div>
         </div>
         <a href="{{ route('sales-reports.client-wise') }}" class="dd-apply" style="text-decoration:none">View Full</a>
     </div>
@@ -379,7 +377,7 @@
     <div class="dd-panel-head">
         <div>
             <div class="dd-panel-title">Carriers Summary</div>
-            <div class="dd-panel-sub">This month — Approved / Level / GI / Target</div>
+            <div class="dd-panel-sub">Today — Approved / Level / GI / Target</div>
         </div>
         <a href="{{ route('sales-reports.carrier-wise') }}" class="dd-apply" style="text-decoration:none">View Full</a>
     </div>

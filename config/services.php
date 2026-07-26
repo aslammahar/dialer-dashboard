@@ -48,6 +48,7 @@ return [
     'cache_ttl'             => env('DIALER_CACHE_TTL', 300), // seconds — avoids hammering the dialer on every page load
     'monthly_sales_target'  => env('DIALER_MONTHLY_SALES_TARGET', 0),
     'monthly_sales_current' => env('DIALER_MONTHLY_SALES_CURRENT', 0),
+    
 ],
 
 ];

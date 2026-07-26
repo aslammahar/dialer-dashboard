@@ -10,13 +10,15 @@ class DialerDashboardController extends Controller
 {
     protected array $groups = ['QA', 'Closer', 'Avatar', 'Retention', 'Support', 'Sales'];
 protected array $editorEmails = [
-    'm.muzammil@jsons.com',
+    'm.muzammil@jsonscommunication.com',
+    'fazail@jsonscommunications.com',
     'ubaid.khan@jsonscommunication.com',
-    'Hussamjanjua9@gmail.com',
+    'hussamjanjua@jsons.com	',
     'furqankashif@jsons.com',
 ];
     public function index(Request $request)
 {
+    
     $view = $request->get('view', 'active');
 
     $defaultFrom = $view === 'archive'
@@ -92,12 +94,15 @@ try {
 $closerCounts = $salesService->closerCounts();
 $activeStats  = $salesService->activeClosersDialerStats($leaderboard);
 $teamPie = $salesService->teamPerformancePie();
-$teamBoard   = $salesService->teamWiseClosersBoard(); // monthly default
+$todayNY = now('America/New_York')->toDateString();
+$teamBoard   = $salesService->teamWiseClosersBoard($todayNY, $todayNY);
 $mergedTeams = $salesService->mergeDialerStatsIntoTeams($teamBoard['teams'], $leaderboard);
-$teamsSummary    = $salesService->teamsSummaryTable($mergedTeams);
-$clientsSummary  = $salesService->clientsSummaryTable();
-$carriersSummary = $salesService->carriersSummaryTable();
+$teamsSummary       = $salesService->teamsSummaryTable($mergedTeams);
 $teamsSummaryTotals = $salesService->teamsSummaryTotals($teamsSummary);
+// Clients / Carriers summary — today only
+$clientsSummary  = $salesService->clientsSummaryTable($todayNY, $todayNY);
+$carriersSummary = $salesService->carriersSummaryTable($todayNY, $todayNY);
+
     return view('dialer-dashboard.index', [
         'filters'           => $filters,
         'groups'            => $groups,
@@ -127,6 +132,13 @@ $teamsSummaryTotals = $salesService->teamsSummaryTotals($teamsSummary);
 
 
     ]);
+}
+
+public function publicIndex(Request $request, string $token)
+{
+    abort_unless(hash_equals((string) config('services.dialer.public_token'), (string) $token), 404);
+
+    return $this->index($request);
 }
    public function syncNow(Request $request)
 {
