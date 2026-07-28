@@ -2843,7 +2843,10 @@ private function canEdit(): bool
 {
     return auth()->check() && in_array(auth()->user()->email, [
         'fazail@jsonscommunications.com',
-        'REPLACE_WITH_SECOND_PERSON_EMAIL@example.com',
+        'm.muzammil@jsonscommunication.com',
+            'ubaid.khan@jsonscommunication.com',
+            'hussamjanjua@jsons.com',
+            'furqankashif@jsons.com',
     ]);
 }
 public function monthlyReports(Request $request)

@@ -6,7 +6,9 @@ class DailySalesEntry extends Model
 {
     protected $fillable = [
         'entry_date', 'sales_closer_id', 'sales_team_id', 'sales_client_id',
-        'sales_carrier_id', 'status', 'sale_type', 'avg_pre', 'notes', 'created_by',
+        'sales_carrier_id', 'status', 'sale_type', 'avg_pre', 'notes',
+        'leads_id', 'created_by',
+
     ];
 
     protected $casts = ['entry_date' => 'date'];

@@ -113,6 +113,17 @@ public function update(Request $request, DailySalesEntry $entry)
         ->route('daily-sales.create')
         ->with('status', $entry->status === 'approved' ? 'Sale approved.' : 'Sale entry updated.');
 }
+
+public function destroy(DailySalesEntry $entry)
+{
+    $this->assertEditor();
+
+    $entry->delete();
+
+    return redirect()
+        ->route('daily-sales.create')
+        ->with('status', 'Sale entry removed.');
+}
     // public function update(Request $request, DailySalesEntry $entry)
     // {
     //     $this->assertEditor();

@@ -13,7 +13,7 @@ protected array $editorEmails = [
     'm.muzammil@jsonscommunication.com',
     'fazail@jsonscommunications.com',
     'ubaid.khan@jsonscommunication.com',
-    'hussamjanjua@jsons.com	',
+    'hussamjanjua@jsons.com',
     'furqankashif@jsons.com',
 ];
     public function index(Request $request)
@@ -82,26 +82,26 @@ try {
 
     // Live sales board + monthly goal + team boxes — pulled from our own
     // DailySalesEntry table (see SalesService), no more hardcoded numbers.
-    $salesService      = app(SalesService::class);
-    $dailyBoard        = $salesService->dailyBoard();
-    $dailyBoard = $salesService->mergeDialerStats($dailyBoard, $leaderboard);
-    $dailyBoardTotals  = $salesService->dailyBoardTotals($dailyBoard);
-   $monthlyPerformance = $salesService->monthlyPerformanceRanking(null, $leaderboard);
-    $avgCallsPerSale = $salesService->avgCallsPerSale($dailyBoardTotals);
-    $goal              = $salesService->monthlyGoal();
-    $teamBoxes         = $salesService->teamBoxes();
-    $allTeams          = \App\Models\SalesTeam::orderBy('name')->get();
-$closerCounts = $salesService->closerCounts();
-$activeStats  = $salesService->activeClosersDialerStats($leaderboard);
-$teamPie = $salesService->teamPerformancePie();
-$todayNY = now('America/New_York')->toDateString();
-$teamBoard   = $salesService->teamWiseClosersBoard($todayNY, $todayNY);
-$mergedTeams = $salesService->mergeDialerStatsIntoTeams($teamBoard['teams'], $leaderboard);
+  $salesService      = app(SalesService::class);
+$todayNY            = now('America/New_York')->toDateString();
+
+$dailyBoard         = $salesService->dailyBoard($todayNY);
+$dailyBoard         = $salesService->mergeDialerStats($dailyBoard, $leaderboard);
+$dailyBoardTotals   = $salesService->dailyBoardTotals($dailyBoard);
+$monthlyPerformance = $salesService->monthlyPerformanceRanking(null, $leaderboard);
+$avgCallsPerSale    = $salesService->avgCallsPerSale($dailyBoardTotals);
+$goal               = $salesService->monthlyGoal();
+$teamBoxes          = $salesService->teamBoxes();
+$allTeams           = \App\Models\SalesTeam::orderBy('name')->get();
+$closerCounts       = $salesService->closerCounts();
+$activeStats        = $salesService->activeClosersDialerStats($leaderboard);
+$teamPie            = $salesService->teamPerformancePie();
+$teamBoard          = $salesService->teamWiseClosersBoard($todayNY, $todayNY);
+$mergedTeams        = $salesService->mergeDialerStatsIntoTeams($teamBoard['teams'], $leaderboard);
 $teamsSummary       = $salesService->teamsSummaryTable($mergedTeams);
 $teamsSummaryTotals = $salesService->teamsSummaryTotals($teamsSummary);
-// Clients / Carriers summary — today only
-$clientsSummary  = $salesService->clientsSummaryTable($todayNY, $todayNY);
-$carriersSummary = $salesService->carriersSummaryTable($todayNY, $todayNY);
+$clientsSummary     = $salesService->clientsSummaryTable($todayNY, $todayNY);
+$carriersSummary    = $salesService->carriersSummaryTable($todayNY, $todayNY);
 
     return view('dialer-dashboard.index', [
         'filters'           => $filters,

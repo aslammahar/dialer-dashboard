@@ -2934,6 +2934,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/daily-sales/create', [DailySalesController::class, 'create'])->name('daily-sales.create');
     Route::post('/daily-sales', [DailySalesController::class, 'store'])->name('daily-sales.store');
     Route::patch('daily-sales/{entry}', [DailySalesController::class, 'update'])->name('daily-sales.update');
+    Route::delete('/daily-sales/{entry}', [DailySalesController::class, 'destroy'])->name('daily-sales.destroy');
 });
 
 Route::middleware(['auth'])->group(function () {

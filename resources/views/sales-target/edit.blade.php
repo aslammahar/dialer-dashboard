@@ -137,14 +137,20 @@
                     <span>{{ $t->name }}</span>
                     <span style="font-weight:600;color:var(--as-accent)">{{ $t->target }}</span>
                 </div> --}}
-                <div class="as-team-row">
+            <div class="as-team-row">
     <span>{{ $t->name }}</span>
     <span style="display:flex;align-items:center;gap:10px">
         <span style="font-weight:600;color:var(--as-accent)">{{ $t->target }}</span>
         @if($canEdit)
+        <form method="POST" action="{{ route('sales-teams.set-target') }}" style="margin:0">
+            @csrf
+            <input type="hidden" name="team_id" value="{{ $t->id }}">
+            <input type="hidden" name="target" value="0">
+            <button type="submit" style="background:none;border:none;color:var(--as-text-muted);font-size:12px;cursor:pointer" title="Reset target to 0, team stays">Clear Target</button>
+        </form>
         <form method="POST" action="{{ route('sales-teams.destroy', $t) }}" onsubmit="return confirm('Remove {{ $t->name }}? Its closers will become unassigned.')" style="margin:0">
             @csrf @method('DELETE')
-            <button type="submit" style="background:none;border:none;color:#ff5a5a;font-size:12px;cursor:pointer">Remove</button>
+            <button type="submit" style="background:none;border:none;color:#ff5a5a;font-size:12px;cursor:pointer">Remove Team</button>
         </form>
         @endif
     </span>
@@ -178,24 +184,30 @@
     </form>
     @endif
 
-    <div class="as-team-list">
-        @forelse($clients as $cl)
-            <div class="as-team-row">
-                <span>{{ $cl->name }}</span>
-                <span style="display:flex;align-items:center;gap:10px">
-                    <span style="font-weight:600;color:var(--as-accent)">{{ $cl->target }}</span>
-                    @if($canEdit)
-                    <form method="POST" action="{{ route('sales-clients.destroy', $cl) }}" onsubmit="return confirm('Remove {{ $cl->name }}?')" style="margin:0">
-                        @csrf @method('DELETE')
-                        <button type="submit" style="background:none;border:none;color:#ff5a5a;font-size:12px;cursor:pointer">Remove</button>
-                    </form>
-                    @endif
-                </span>
-            </div>
-        @empty
-            <div style="color:var(--as-text-muted);font-size:13px;text-align:center;padding:10px">No clients created yet.</div>
-        @endforelse
-    </div>
+   <div class="as-team-list">
+    @forelse($clients as $cl)
+        <div class="as-team-row">
+            <span>{{ $cl->name }}</span>
+            <span style="display:flex;align-items:center;gap:10px">
+                <span style="font-weight:600;color:var(--as-accent)">{{ $cl->target }}</span>
+                @if($canEdit)
+                <form method="POST" action="{{ route('sales-clients.set-target') }}" style="margin:0">
+                    @csrf
+                    <input type="hidden" name="client_id" value="{{ $cl->id }}">
+                    <input type="hidden" name="target" value="0">
+                    <button type="submit" style="background:none;border:none;color:var(--as-text-muted);font-size:12px;cursor:pointer" title="Reset target to 0, client stays">Clear Target</button>
+                </form>
+                <form method="POST" action="{{ route('sales-clients.destroy', $cl) }}" onsubmit="return confirm('Remove {{ $cl->name }}?')" style="margin:0">
+                    @csrf @method('DELETE')
+                    <button type="submit" style="background:none;border:none;color:#ff5a5a;font-size:12px;cursor:pointer">Remove Client</button>
+                </form>
+                @endif
+            </span>
+        </div>
+    @empty
+        <div style="color:var(--as-text-muted);font-size:13px;text-align:center;padding:10px">No clients created yet.</div>
+    @endforelse
+</div>
 </div>
 
 <div class="as-card">
@@ -222,24 +234,30 @@
     </form>
     @endif
 
-    <div class="as-team-list">
-        @forelse($carriers as $ca)
-            <div class="as-team-row">
-                <span>{{ $ca->name }}</span>
-                <span style="display:flex;align-items:center;gap:10px">
-                    <span style="font-weight:600;color:var(--as-accent)">{{ $ca->target }}</span>
-                    @if($canEdit)
-                    <form method="POST" action="{{ route('sales-carriers.destroy', $ca) }}" onsubmit="return confirm('Remove {{ $ca->name }}?')" style="margin:0">
-                        @csrf @method('DELETE')
-                        <button type="submit" style="background:none;border:none;color:#ff5a5a;font-size:12px;cursor:pointer">Remove</button>
-                    </form>
-                    @endif
-                </span>
-            </div>
-        @empty
-            <div style="color:var(--as-text-muted);font-size:13px;text-align:center;padding:10px">No carriers created yet.</div>
-        @endforelse
-    </div>
+  <div class="as-team-list">
+    @forelse($carriers as $ca)
+        <div class="as-team-row">
+            <span>{{ $ca->name }}</span>
+            <span style="display:flex;align-items:center;gap:10px">
+                <span style="font-weight:600;color:var(--as-accent)">{{ $ca->target }}</span>
+                @if($canEdit)
+                <form method="POST" action="{{ route('sales-carriers.set-target') }}" style="margin:0">
+                    @csrf
+                    <input type="hidden" name="carrier_id" value="{{ $ca->id }}">
+                    <input type="hidden" name="target" value="0">
+                    <button type="submit" style="background:none;border:none;color:var(--as-text-muted);font-size:12px;cursor:pointer" title="Reset target to 0, carrier stays">Clear Target</button>
+                </form>
+                <form method="POST" action="{{ route('sales-carriers.destroy', $ca) }}" onsubmit="return confirm('Remove {{ $ca->name }}?')" style="margin:0">
+                    @csrf @method('DELETE')
+                    <button type="submit" style="background:none;border:none;color:#ff5a5a;font-size:12px;cursor:pointer">Remove Carrier</button>
+                </form>
+                @endif
+            </span>
+        </div>
+    @empty
+        <div style="color:var(--as-text-muted);font-size:13px;text-align:center;padding:10px">No carriers created yet.</div>
+    @endforelse
+</div>
 </div>
 </div>
 

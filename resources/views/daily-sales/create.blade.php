@@ -74,6 +74,11 @@
     .as-submit:hover{filter:brightness(1.08)}
     .as-cancel{color:var(--as-text-muted);font-size:13px;text-decoration:none;padding:13px 16px}
     .as-cancel:hover{color:var(--as-text-sec)}
+    .as-entry-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .as-remove-form{margin:0;flex-shrink:0}
+    .as-remove-btn{background:none;border:none;color:var(--as-danger);font-size:11.5px;cursor:pointer;padding:4px 8px;
+        border:1px solid rgba(255,90,90,.3);border-radius:6px;white-space:nowrap}
+    .as-remove-btn:hover{background:rgba(255,90,90,.1)}
 </style>
 @endpush
 
@@ -163,7 +168,7 @@
 
                 <div class="as-field">
                     <label class="as-label">Leads ID</label>
-                    <input type="text" name="leads_id" class="as-input" value="{{ old('leads_id') }}" placeholder="e.g. LD-10234">
+                    <input type="text" name="leads_id" class="as-input" value="{{ old('leads_id') }}" placeholder="e.g. LD-10234" required>
                 </div>
 
                 <div class="as-field full">
@@ -215,60 +220,74 @@
 
             @if($isLocked)
                 <div style="border-bottom:1px solid var(--as-border);padding-bottom:18px;margin-bottom:18px;opacity:.55">
-                    <div style="font-size:13px;color:var(--as-text-sec)">
-                        <strong style="color:var(--as-text)">{{ $entry->closer->name ?? '—' }}</strong>
-                        — {{ $entry->client->name ?? 'No client' }}
-                        · {{ $entry->carrier->name ?? 'No carrier' }}
-                        · {{ \Carbon\Carbon::parse($entry->entry_date)->format('d M Y') }}
+                    <div class="as-entry-head">
+                        <div style="font-size:13px;color:var(--as-text-sec)">
+                            <strong style="color:var(--as-text)">{{ $entry->closer->name ?? '—' }}</strong>
+                            — {{ $entry->client->name ?? 'No client' }}
+                            · {{ $entry->carrier->name ?? 'No carrier' }}
+                            · {{ \Carbon\Carbon::parse($entry->entry_date)->format('d M Y') }}
+                        </div>
+                        <form method="POST" action="{{ route('daily-sales.destroy', $entry) }}" onsubmit="return confirm('Remove this sale entry? This cannot be undone.')" class="as-remove-form">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="as-remove-btn">🗑 Remove</button>
+                        </form>
                     </div>
-                    <div style="font-size:12px;color:var(--as-danger);margin-top:6px">
+                    <div style="font-size:12px;color:var(--as-danger)">
                         🔒 1-day edit window has passed — this entry is locked.
                     </div>
                 </div>
             @else
-                <form method="POST" action="{{ route('daily-sales.update', $entry) }}" style="border-bottom:1px solid var(--as-border);padding-bottom:18px;margin-bottom:18px">
-                    @csrf
-                    @method('PATCH')
-
-                    <div style="font-size:13px;color:var(--as-text-sec);margin-bottom:10px">
-                        <strong style="color:var(--as-text)">{{ $entry->closer->name ?? '—' }}</strong>
-                        — {{ $entry->client->name ?? 'No client' }}
-                        · {{ $entry->carrier->name ?? 'No carrier' }}
-                        · {{ \Carbon\Carbon::parse($entry->entry_date)->format('d M Y') }}
+                <div style="border-bottom:1px solid var(--as-border);padding-bottom:18px;margin-bottom:18px">
+                    <div class="as-entry-head">
+                        <div style="font-size:13px;color:var(--as-text-sec)">
+                            <strong style="color:var(--as-text)">{{ $entry->closer->name ?? '—' }}</strong>
+                            — {{ $entry->client->name ?? 'No client' }}
+                            · {{ $entry->carrier->name ?? 'No carrier' }}
+                            · {{ \Carbon\Carbon::parse($entry->entry_date)->format('d M Y') }}
+                        </div>
+                        <form method="POST" action="{{ route('daily-sales.destroy', $entry) }}" onsubmit="return confirm('Remove this sale entry? This cannot be undone.')" class="as-remove-form">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="as-remove-btn">🗑 Remove</button>
+                        </form>
                     </div>
 
-                    <div class="as-grid">
-                        <div class="as-field">
-                            <label class="as-label">Sale Date</label>
-                            <input type="date" name="entry_date" class="as-input" value="{{ \Carbon\Carbon::parse($entry->entry_date)->toDateString() }}" max="{{ now()->toDateString() }}">
-                        </div>
-                        <div class="as-field">
-                            <label class="as-label">Leads ID</label>
-                            <input type="text" name="leads_id" class="as-input" value="{{ $entry->leads_id }}">
-                        </div>
-                        <div class="as-field">
-                            <label class="as-label">Avg Pre</label>
-                            <input type="number" step="0.01" name="avg_pre" class="as-input" value="{{ $entry->avg_pre }}">
-                        </div>
-                        <div class="as-field">
-                            <label class="as-label">Sale Type</label>
-                            <select name="sale_type" class="as-select">
-                                <option value="">-- N/A --</option>
-                                <option value="level" {{ $entry->sale_type == 'level' ? 'selected' : '' }}>Level</option>
-                                <option value="gi" {{ $entry->sale_type == 'gi' ? 'selected' : '' }}>GI</option>
-                            </select>
-                        </div>
-                        <div class="as-field">
-                            <label class="as-label">Status</label>
-                            <select name="status" class="as-select">
-                                <option value="pending" selected>⏳ Pending</option>
-                                <option value="approved">✓ Approve</option>
-                            </select>
-                        </div>
-                    </div>
+                    <form method="POST" action="{{ route('daily-sales.update', $entry) }}">
+                        @csrf
+                        @method('PATCH')
 
-                    <button type="submit" class="as-submit" style="width:auto;padding:9px 18px;font-size:13px">Save</button>
-                </form>
+                        <div class="as-grid">
+                            <div class="as-field">
+                                <label class="as-label">Sale Date</label>
+                                <input type="date" name="entry_date" class="as-input" value="{{ \Carbon\Carbon::parse($entry->entry_date)->toDateString() }}" max="{{ now()->toDateString() }}">
+                            </div>
+                            <div class="as-field">
+                                <label class="as-label">Leads ID</label>
+                                <input type="text" name="leads_id" class="as-input" value="{{ $entry->leads_id }}">
+                            </div>
+                            <div class="as-field">
+                                <label class="as-label">Avg Pre</label>
+                                <input type="number" step="0.01" name="avg_pre" class="as-input" value="{{ $entry->avg_pre }}">
+                            </div>
+                            <div class="as-field">
+                                <label class="as-label">Sale Type</label>
+                                <select name="sale_type" class="as-select">
+                                    <option value="">-- N/A --</option>
+                                    <option value="level" {{ $entry->sale_type == 'level' ? 'selected' : '' }}>Level</option>
+                                    <option value="gi" {{ $entry->sale_type == 'gi' ? 'selected' : '' }}>GI</option>
+                                </select>
+                            </div>
+                            <div class="as-field">
+                                <label class="as-label">Status</label>
+                                <select name="status" class="as-select">
+                                    <option value="pending" selected>⏳ Pending</option>
+                                    <option value="approved">✓ Approve</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="as-submit" style="width:auto;padding:9px 18px;font-size:13px">Save</button>
+                    </form>
+                </div>
             @endif
         @endforeach
     </div>

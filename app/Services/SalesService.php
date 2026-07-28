@@ -14,7 +14,7 @@ class SalesService
      */
 public function dailyBoard(?string $date = null): array
 {
-    $date = $date ?? now()->toDateString();
+    $date = $date ?? now('America/New_York')->toDateString();
 
     $entries = DailySalesEntry::with(['closer', 'team'])
         ->whereDate('entry_date', $date)
