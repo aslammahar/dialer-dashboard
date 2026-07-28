@@ -1109,7 +1109,7 @@ public function attendanceMonthlySummary(?string $month = null): array
  */
 public function activeClosersToday(): array
 {
-    return \App\Models\ClosersAttendance::whereDate('attendance_date', now()->toDateString())
+    return \App\Models\ClosersAttendance::whereDate('attendance_date', now('America/New_York')->toDateString())
         ->where('status', 'present')
         ->whereHas('closer', fn ($q) => $q->whereNotNull('sales_team_id'))
         ->pluck('sales_closer_id')

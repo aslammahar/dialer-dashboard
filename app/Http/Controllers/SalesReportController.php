@@ -2800,20 +2800,20 @@ public function exportMyReport(Request $request)
 public function teamsWise(Request $request)
 {
     $range = $request->get('range', 'monthly'); // daily, weekly, monthly
-    $month = $request->get('month', now()->toDateString());
+    $month = $request->get('month', now('America/New_York')->toDateString());
 
     switch ($range) {
         case 'daily':
-            $from = now()->toDateString();
-            $to   = now()->toDateString();
+            $from = now('America/New_York')->toDateString();
+            $to   = now('America/New_York')->toDateString();
             break;
         case 'weekly':
-            $from = now()->startOfWeek()->toDateString();
-            $to   = now()->toDateString();
+            $from = now('America/New_York')->startOfWeek()->toDateString();
+            $to   = now('America/New_York')->toDateString();
             break;
         default:
             $from = \Carbon\Carbon::parse($month)->startOfMonth()->toDateString();
-            $to   = min(\Carbon\Carbon::parse($month)->endOfMonth(), now())->toDateString();
+            $to   = min(\Carbon\Carbon::parse($month)->endOfMonth(), now('America/New_York'))->toDateString();
             break;
     }
 
@@ -2914,20 +2914,20 @@ public function carrierWise(Request $request)
 protected function resolveDateRange(Request $request): array
 {
     $range = $request->get('range', 'monthly');
-    $month = $request->get('month', now()->toDateString());
+    $month = $request->get('month', now('America/New_York')->toDateString());
 
     switch ($range) {
         case 'daily':
-            $from = now()->toDateString();
-            $to   = now()->toDateString();
+            $from = now('America/New_York')->toDateString();
+            $to   = now('America/New_York')->toDateString();
             break;
         case 'weekly':
-            $from = now()->startOfWeek()->toDateString();
-            $to   = now()->toDateString();
+            $from = now('America/New_York')->startOfWeek()->toDateString();
+            $to   = now('America/New_York')->toDateString();
             break;
         default:
             $from = \Carbon\Carbon::parse($month)->startOfMonth()->toDateString();
-            $to   = min(\Carbon\Carbon::parse($month)->endOfMonth(), now())->toDateString();
+            $to   = min(\Carbon\Carbon::parse($month)->endOfMonth(), now('America/New_York'))->toDateString();
             break;
     }
 

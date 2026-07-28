@@ -134,6 +134,49 @@ $carriersSummary    = $salesService->carriersSummaryTable($todayNY, $todayNY);
     ]);
 }
 
+public function liveBoard(Request $request)
+{
+    $salesService = app(SalesService::class);
+    $todayNY      = now('America/New_York')->toDateString();
+
+    $leaderboard = [];
+    try {
+        $dialerApi   = app(DialerApiService::class);
+        $leaderboard = $dialerApi->leaderboard([
+            'from' => $todayNY,
+            'to'   => $todayNY,
+            'view' => 'active',
+        ]);
+    } catch (\Throwable $e) {
+        report($e);
+    }
+
+    $dailyBoard       = $salesService->dailyBoard($todayNY);
+    $dailyBoard       = $salesService->mergeDialerStats($dailyBoard, $leaderboard);
+    $dailyBoardTotals = $salesService->dailyBoardTotals($dailyBoard);
+    $activeStats      = $salesService->activeClosersDialerStats($leaderboard);
+    $closerCounts     = $salesService->closerCounts();
+    $clientsSummary   = $salesService->clientsSummaryTable($todayNY, $todayNY);
+    $carriersSummary  = $salesService->carriersSummaryTable($todayNY, $todayNY);
+
+    $latestApproved = \App\Models\DailySalesEntry::with('closer')
+        ->where('status', 'approved')
+        ->whereDate('entry_date', $todayNY)
+        ->latest('created_at')
+        ->first();
+
+    return response()->json([
+        'board'            => $dailyBoard,
+        'totals'           => $dailyBoardTotals,
+        'active_stats'      => $activeStats,
+        'closer_counts'     => $closerCounts,
+        'clients_summary'   => $clientsSummary,
+        'carriers_summary'  => $carriersSummary,
+        'latest_id'         => $latestApproved->id ?? null,
+        'latest_closer'     => $latestApproved->closer->name ?? null,
+    ]);
+}
+
 public function publicIndex(Request $request, string $token)
 {
     abort_unless(hash_equals((string) config('services.dialer.public_token'), (string) $token), 404);

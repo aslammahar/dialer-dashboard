@@ -179,26 +179,26 @@
     <div class="dd-stat-card">
         <div class="dd-stat-icon"><i class="ti ti-user-check"></i></div>
         <div class="dd-stat-label">Active Closers</div>
-        <div class="dd-stat-value">{{ $closerCounts['active'] }} <span style="font-size:14px;color:var(--dd-text-muted)">/ {{ $closerCounts['total'] }}</span></div>
+        <div class="dd-stat-value" id="ddActiveClosersVal">{{ $closerCounts['active'] }} <span style="font-size:14px;color:var(--dd-text-muted)">/ {{ $closerCounts['total'] }}</span></div>
         <div class="dd-stat-trend dd-trend-up">Present today</div>
     </div>
     <div class="dd-stat-card">
         <div class="dd-stat-icon"><i class="ti ti-trophy"></i></div>
         <div class="dd-stat-label">Today Total Sales</div>
-        <div class="dd-stat-value">{{ $dailyBoardTotals['approved'] }}</div>
+        <div class="dd-stat-value" id="ddTotalSalesVal">{{ $dailyBoardTotals['approved'] }}</div>
         <div class="dd-stat-trend dd-trend-up">Approved sales</div>
     </div>
     <div class="dd-stat-card">
         <div class="dd-stat-icon"><i class="ti ti-clock"></i></div>
         <div class="dd-stat-label">Avg Talk Time (Active Closers)</div>
-        <div class="dd-stat-value">{{ $activeStats['avg_talk_time'] }}</div>
+        <div class="dd-stat-value" id="ddAvgTalkVal">{{ $activeStats['avg_talk_time'] }}</div>
         <div class="dd-stat-trend dd-trend-up">Today, present closers only</div>
     </div>
     <div class="dd-stat-card">
         <div class="dd-stat-icon"><i class="ti ti-phone-outgoing"></i></div>
         <div class="dd-stat-label">Avg Calls per Sale</div>
-        <div class="dd-stat-value">{{ $dailyBoardTotals['approved'] > 0 ? round($activeStats['calls'] / $dailyBoardTotals['approved'], 1) : 0 }}</div>
-        <div class="dd-stat-trend dd-trend-up">{{ $activeStats['calls'] }} calls today (active closers)</div>
+        <div class="dd-stat-value" id="ddAvgCallsVal">{{ $dailyBoardTotals['approved'] > 0 ? round($activeStats['calls'] / $dailyBoardTotals['approved'], 1) : 0 }}</div>
+        <div class="dd-stat-trend dd-trend-up" id="ddCallsSubVal">{{ $activeStats['calls'] }} calls today (active closers)</div>
     </div>
 </div>
 
@@ -211,7 +211,7 @@
             {{-- <a href="{{ route('daily-sales.create') }}" class="dd-apply" style="text-decoration:none"> Update Sale</a> --}}
         </div>
         <div class="dd-lb-scroll">
-    <table class="dd-lb-table">
+    <table class="dd-lb-table" id="ddDailyBoardTable">
         <thead>
             <tr>
                 <th>Time Since Last Sale</th>
@@ -326,7 +326,7 @@
         <a href="{{ route('sales-reports.client-wise') }}" class="dd-apply" style="text-decoration:none">View Full</a>
     </div>
     <div class="dd-lb-scroll">
-        <table class="dd-lb-table">
+        <table class="dd-lb-table" id="ddClientsTable">
             <thead>
                 <tr>
                     <th>Last Sale</th><th>Client</th><th>Approved</th><th>Level</th><th>GI</th>
@@ -382,7 +382,7 @@
         <a href="{{ route('sales-reports.carrier-wise') }}" class="dd-apply" style="text-decoration:none">View Full</a>
     </div>
     <div class="dd-lb-scroll">
-        <table class="dd-lb-table">
+        <table class="dd-lb-table" id="ddCarriersTable">
             <thead>
                 <tr>
                     <th>Carrier</th><th>Approved</th><th>Level</th><th>GI</th>
@@ -550,6 +550,166 @@
     }
     tick();
     setInterval(tick, 1000);
+})();
+</script>
+<script>
+(function(){
+    var lastLatestId = null;
+    var pollUrl = @json(route('dialer-dashboard.live-board'));
+    var firstRun = true;
+
+    function renderBoardRow(row) {
+        return '<tr>' +
+            '<td>' + (row.time_since_last_sale ?? '-') + '</td>' +
+            '<td><span class="dd-lb-team">' + row.team + '</span></td>' +
+            '<td>' + row.closer + '</td>' +
+            '<td>' + row.approved + '</td>' +
+            '<td>' + row.level + '</td>' +
+            '<td>' + row.gi + '</td>' +
+            '<td>' + row.level_pct + '%</td>' +
+            '<td>' + row.avg_pre + '</td>' +
+            '<td>' + row.calls + '</td>' +
+            '<td>' + (row.avg_talk_time ?? '-') + '</td>' +
+        '</tr>';
+    }
+
+    function renderClientRow(c) {
+        return '<tr>' +
+            '<td>' + c.last_sale + '</td>' +
+            '<td>' + c.client + '</td>' +
+            '<td>' + c.approved + '</td>' +
+            '<td>' + c.level + '</td>' +
+            '<td>' + c.gi + '</td>' +
+            '<td>' + c.level_pct + '%</td>' +
+            '<td>' + c.target + '</td>' +
+            '<td>' + c.left + '</td>' +
+            '<td>' + c.avg_pre + '</td>' +
+        '</tr>';
+    }
+
+    function renderCarrierRow(c) {
+        return '<tr>' +
+            '<td>' + c.carrier + '</td>' +
+            '<td>' + c.approved + '</td>' +
+            '<td>' + c.level + '</td>' +
+            '<td>' + c.gi + '</td>' +
+            '<td>' + c.level_pct + '%</td>' +
+            '<td>' + c.target + '</td>' +
+            '<td>' + c.left + '</td>' +
+            '<td>' + c.avg_pre + '</td>' +
+        '</tr>';
+    }
+
+    function sum(arr, key) {
+        return arr.reduce(function(s, r){ return s + (r[key] || 0); }, 0);
+    }
+
+    function poll() {
+        fetch(pollUrl, { headers: { 'Accept': 'application/json' } })
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                // Today's Sales Board
+                var table = document.getElementById('ddDailyBoardTable');
+                if (table) {
+                    var tbody = table.querySelector('tbody');
+                    tbody.innerHTML = data.board.length === 0
+                        ? '<tr><td colspan="10" style="text-align:center;color:var(--dd-text-muted);padding:20px">No sales logged today yet.</td></tr>'
+                        : data.board.map(renderBoardRow).join('');
+
+                    var tf = table.querySelector('tfoot tr');
+                    if (tf) {
+                        tf.innerHTML =
+                            '<td colspan="3">Total</td>' +
+                            '<td>' + data.totals.approved + '</td>' +
+                            '<td>' + data.totals.level + '</td>' +
+                            '<td>' + data.totals.gi + '</td>' +
+                            '<td>' + data.totals.level_pct + '%</td>' +
+                            '<td>' + data.totals.avg_pre + '</td>' +
+                            '<td>' + data.totals.calls + '</td>' +
+                            '<td>' + data.totals.avg_talk_time + '</td>';
+                    }
+                }
+
+                // Stat cards
+                var totalSalesEl = document.getElementById('ddTotalSalesVal');
+                if (totalSalesEl) totalSalesEl.textContent = data.totals.approved;
+
+                var avgTalkEl = document.getElementById('ddAvgTalkVal');
+                if (avgTalkEl) avgTalkEl.textContent = data.active_stats.avg_talk_time;
+
+                var avgCallsEl = document.getElementById('ddAvgCallsVal');
+                if (avgCallsEl) {
+                    var avgCalls = data.totals.approved > 0 ? Math.round((data.active_stats.calls / data.totals.approved) * 10) / 10 : 0;
+                    avgCallsEl.textContent = avgCalls;
+                }
+                var callsSubEl = document.getElementById('ddCallsSubVal');
+                if (callsSubEl) callsSubEl.textContent = data.active_stats.calls + ' calls today (active closers)';
+
+                var activeClosersEl = document.getElementById('ddActiveClosersVal');
+                if (activeClosersEl) {
+                    activeClosersEl.innerHTML = data.closer_counts.active + ' <span style="font-size:14px;color:var(--dd-text-muted)">/ ' + data.closer_counts.total + '</span>';
+                }
+
+                // Clients Summary
+                var clientsTable = document.getElementById('ddClientsTable');
+                if (clientsTable) {
+                    var cBody = clientsTable.querySelector('tbody');
+                    cBody.innerHTML = data.clients_summary.length === 0
+                        ? '<tr><td colspan="9" style="text-align:center;color:var(--dd-text-muted);padding:16px">No client data yet.</td></tr>'
+                        : data.clients_summary.map(renderClientRow).join('');
+
+                    var cTf = clientsTable.querySelector('tfoot tr');
+                    if (cTf && data.clients_summary.length > 0) {
+                        var ctApproved = sum(data.clients_summary, 'approved');
+                        var ctLevel = sum(data.clients_summary, 'level');
+                        cTf.innerHTML =
+                            '<td>Total</td><td>-</td>' +
+                            '<td>' + ctApproved + '</td>' +
+                            '<td>' + ctLevel + '</td>' +
+                            '<td>' + sum(data.clients_summary, 'gi') + '</td>' +
+                            '<td>' + (ctApproved > 0 ? Math.round((ctLevel / ctApproved) * 100) : 0) + '%</td>' +
+                            '<td>' + sum(data.clients_summary, 'target') + '</td>' +
+                            '<td>' + sum(data.clients_summary, 'left') + '</td>' +
+                            '<td>' + (Math.round((sum(data.clients_summary, 'avg_pre') / data.clients_summary.length) * 100) / 100) + '</td>';
+                    }
+                }
+
+                // Carriers Summary
+                var carriersTable = document.getElementById('ddCarriersTable');
+                if (carriersTable) {
+                    var caBody = carriersTable.querySelector('tbody');
+                    caBody.innerHTML = data.carriers_summary.length === 0
+                        ? '<tr><td colspan="8" style="text-align:center;color:var(--dd-text-muted);padding:16px">No carrier data yet.</td></tr>'
+                        : data.carriers_summary.map(renderCarrierRow).join('');
+
+                    var caTf = carriersTable.querySelector('tfoot tr');
+                    if (caTf && data.carriers_summary.length > 0) {
+                        var ctApproved = sum(data.carriers_summary, 'approved');
+                        var ctLevel = sum(data.carriers_summary, 'level');
+                        caTf.innerHTML =
+                            '<td>Total</td>' +
+                            '<td>' + ctApproved + '</td>' +
+                            '<td>' + ctLevel + '</td>' +
+                            '<td>' + sum(data.carriers_summary, 'gi') + '</td>' +
+                            '<td>' + (ctApproved > 0 ? Math.round((ctLevel / ctApproved) * 100) : 0) + '%</td>' +
+                            '<td>' + sum(data.carriers_summary, 'target') + '</td>' +
+                            '<td>' + sum(data.carriers_summary, 'left') + '</td>' +
+                            '<td>' + (Math.round((sum(data.carriers_summary, 'avg_pre') / data.carriers_summary.length) * 100) / 100) + '</td>';
+                    }
+                }
+
+                // Celebration on new approved sale
+                if (!firstRun && data.latest_id && data.latest_id !== lastLatestId) {
+                    window.ddCelebrateSale(data.latest_closer);
+                }
+                lastLatestId = data.latest_id;
+                firstRun = false;
+            })
+            .catch(function(err){ console.error('Live board poll failed', err); });
+    }
+
+    poll();
+    setInterval(poll, 5000); // ab 5 second
 })();
 </script>
 <script>

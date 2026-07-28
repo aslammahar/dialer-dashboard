@@ -118,7 +118,7 @@
             @csrf
 
             <div class="as-grid">
-                <input type="hidden" name="entry_date" value="{{ now()->toDateString() }}">
+                <input type="hidden" name="entry_date" value="{{ now('America/New_York')->toDateString() }}">
 
                 <div class="as-field">
                     <label class="as-label">Closer <span class="as-required">*</span></label>

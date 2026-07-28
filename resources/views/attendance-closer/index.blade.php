@@ -63,8 +63,7 @@
 
     <form method="POST" action="{{ route('attendance-closer.store') }}">
         @csrf
-        <input type="hidden" name="date" value="{{ $date }}">
-
+        <input type="date" name="date" class="at-input" value="{{ $date }}" max="{{ now('America/New_York')->toDateString() }}">
         <table class="at-table">
             <thead>
                 <tr><th>Closer</th><th>Team</th><th>Attendance</th></tr>
@@ -102,7 +101,7 @@
 </div>
 <div style="margin-top:28px">
     <div style="font-family:var(--at-font-display);font-weight:700;font-size:15px;margin-bottom:12px">
-        Monthly Attendance Summary — {{ now()->format('F Y') }}
+        Monthly Attendance Summary — {{ now('America/New_York')->format('F Y') }}
     </div>
    <table class="at-table at-summary-table">
     <thead>

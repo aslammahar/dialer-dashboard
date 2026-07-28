@@ -29,13 +29,13 @@ class CloserAttendanceController extends Controller
     // }
 public function index(Request $request)
 {
-    $date = $request->get('date', now()->toDateString());
+    $date = $request->get('date', now('America/New_York')->toDateString());
 
     $closers = SalesCloser::with('team')
-    ->where('active', true)
-    ->whereNotNull('sales_team_id')   // unassigned closers hide from attendance
-    ->orderBy('name')
-    ->get();
+        ->where('active', true)
+        ->whereNotNull('sales_team_id')
+        ->orderBy('name')
+        ->get();
 
     $existing = ClosersAttendance::whereDate('attendance_date', $date)
         ->pluck('status', 'sales_closer_id');
@@ -45,7 +45,6 @@ public function index(Request $request)
         'closers'           => $closers,
         'existing'          => $existing,
         'monthlySummary'    => app(\App\Services\SalesService::class)->attendanceMonthlySummary(),
-        // 'canEdit'           => $this->canEdit(),
     ]);
 }
     public function store(Request $request)
