@@ -79,11 +79,11 @@
                 </div>
 
                 <div class="as-field">
-                    <label class="as-label">Milestone 1 Label (45%)</label>
+                    <label class="as-label">Milestone 1 Label (80%)</label>
                     <input type="text" name="milestone_1_label" class="as-input" value="{{ old('milestone_1_label', $target->milestone_1_label) }}" required>
                 </div>
                 <div class="as-field">
-                    <label class="as-label">Milestone 2 Label (75%)</label>
+                    <label class="as-label">Milestone 2 Label (90%)</label>
                     <input type="text" name="milestone_2_label" class="as-input" value="{{ old('milestone_2_label', $target->milestone_2_label) }}" required>
                 </div>
                 <div class="as-field">
