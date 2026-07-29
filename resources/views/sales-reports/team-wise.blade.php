@@ -135,7 +135,8 @@
                 <div class="tw-team-name">{{ $team['name'] }}</div>
                 <div class="tw-team-summary">
     <b>{{ $team['totals']['mtd'] }}</b> MTD &nbsp;·&nbsp;
-    Avg SPD <b>{{ $team['averages']['spd'] }}</b> &nbsp;·&nbsp;
+    Total Closers <b>{{ $team['total_closers'] ?? count($team['closers']) }}</b> &nbsp;·&nbsp;
+    Team SPD <b>{{ $team['averages']['spd'] }}</b> &nbsp;·&nbsp;
     Level% <b>{{ $team['averages']['level_pct'] }}%</b> &nbsp;·&nbsp;
     Conv <b>{{ $team['totals']['conversion'] ?? 0 }}</b>
 </div>

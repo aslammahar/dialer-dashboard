@@ -113,16 +113,18 @@
     .dd-lb-table{width:100%;border-collapse:collapse;min-width:820px}
     .dd-lb-table th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--dd-text-muted);
     text-align:right;padding:0 6px 8px;font-weight:600;white-space:nowrap}
-    .dd-lb-table th:first-child,.dd-lb-table th:nth-child(2),.dd-lb-table th:nth-child(3){text-align:left}
+    .dd-lb-table th:first-child{text-align:left}
+    .dd-lb-table th.dd-text-left,.dd-lb-table td.dd-text-left{text-align:left!important}
     .dd-lb-table th.dd-th-group-monthly{text-align:center;color:var(--dd-text-sec);border-bottom:1px solid var(--dd-border)}
     .dd-lb-table td{padding:7px 6px;font-size:12.5px;border-bottom:1px solid var(--dd-border);text-align:right;
     font-family:var(--dd-font-mono);white-space:nowrap}
-    .dd-lb-table td:first-child,.dd-lb-table td:nth-child(2),.dd-lb-table td:nth-child(3){text-align:left;font-family:var(--dd-font-body)}
+    .dd-lb-table tbody td:first-child{text-align:left;font-family:var(--dd-font-body)}
+    .dd-lb-table tbody td.dd-font-body{font-family:var(--dd-font-body)}
     .dd-lb-table tbody tr{transition:background .2s ease}
     .dd-lb-table tbody tr:hover{background:rgba(255,255,255,.025)}
     .dd-lb-table tbody tr:last-child td{border-bottom:none}
     .dd-lb-table tfoot td{padding:11px 10px;font-size:12.5px;font-weight:600;border-top:1px solid var(--dd-border-strong);
-        background:var(--dd-surface-alt);font-family:var(--dd-font-mono)}
+        background:var(--dd-surface-alt);font-family:var(--dd-font-mono);text-align:right}
     .dd-lb-table tfoot td:first-child{font-family:var(--dd-font-body);text-align:left}
     .dd-lb-agent{display:flex;align-items:center;gap:9px}
     .dd-avatar{width:28px;height:28px;border-radius:50%;background:var(--dd-surface-alt);color:var(--dd-text-sec);
@@ -167,21 +169,21 @@
 
     .dd-sale-banner{position:absolute;top:47%;left:50%;transform:translate(-50%,-46%) scale(.85);
         opacity:0;text-align:center;animation:dd-banner-pop .6s cubic-bezier(.22,1,.36,1) forwards,
-        dd-banner-out .6s ease forwards 4.25s}
+        dd-banner-out .6s ease forwards 14.25s}
     @keyframes dd-banner-pop{0%{opacity:0;transform:translate(-50%,-40%) scale(.85)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
     @keyframes dd-banner-out{to{opacity:0;transform:translate(-50%,-55%) scale(.96)}}
 
-    .dd-sale-pill{display:inline-flex;flex-direction:column;align-items:center;gap:3px;
-        background:linear-gradient(180deg,rgba(17,22,29,.82),rgba(9,13,18,.9));
-        backdrop-filter:blur(14px);border:1px solid rgba(52,245,197,.28);
-        border-radius:20px;padding:22px 38px;box-shadow:0 18px 44px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.03) inset}
-    .dd-sale-kicker{font-size:10.5px;text-transform:uppercase;letter-spacing:.18em;color:var(--dd-text-muted);margin-bottom:2px}
-    .dd-sale-name{font-family:var(--dd-font-display);font-weight:700;font-size:30px;letter-spacing:.2px;
+    .dd-sale-pill{display:inline-flex;flex-direction:column;align-items:center;gap:6px;
+        background:linear-gradient(180deg,rgba(17,22,29,.92),rgba(9,13,18,.96));
+        backdrop-filter:blur(16px);border:2px solid rgba(52,245,197,.4);
+        border-radius:26px;padding:32px 56px;box-shadow:0 24px 60px rgba(0,0,0,.75),0 0 45px rgba(52,245,197,.22);min-width:440px}
+    .dd-sale-kicker{font-size:13px;text-transform:uppercase;letter-spacing:.22em;color:var(--dd-accent);font-weight:700;margin-bottom:4px}
+    .dd-sale-name{font-family:var(--dd-font-display);font-weight:700;font-size:42px;letter-spacing:.2px;
         background:linear-gradient(100deg,var(--dd-text) 30%,var(--dd-accent) 55%,var(--dd-text) 78%);
         background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
         animation:dd-shimmer 2.6s linear infinite}
     @keyframes dd-shimmer{0%{background-position:0% 0}100%{background-position:-220% 0}}
-    .dd-sale-sub{font-size:12.5px;color:var(--dd-text-sec);margin-top:2px;letter-spacing:.02em}
+    .dd-sale-sub{font-size:16px;color:var(--dd-text-sec);margin-top:4px;letter-spacing:.02em;font-weight:500}
 
     .dd-dancers{position:absolute;inset:0;pointer-events:none}
     .dd-dance-spot{position:absolute;bottom:9%;left:50%;transform:translateX(-50%);

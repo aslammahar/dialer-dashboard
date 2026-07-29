@@ -177,19 +177,28 @@ public function monthlyPerformanceRanking(?string $month = null, array $dialerLe
             $match = $exactLookup[$closerName] ?? $firstNameLookup[$firstName] ?? null;
             $calls = $match['calls'] ?? 0;
 
+            $clientBreakdown = [];
+            foreach ($approved as $entry) {
+                $cName = optional($entry->client)->name;
+                if ($cName) {
+                    $clientBreakdown[$cName] = ($clientBreakdown[$cName] ?? 0) + 1;
+                }
+            }
+
             return [
-                'closer'        => $closer->name ?? 'Unknown',
-                'team'          => $closer->team->name ?? '-',
-                'working_days'  => $workingDays,
-                'mtd'           => $mtd,
-                'spd'           => $workingDays > 0 ? round($mtd / $workingDays, 1) : 0,
-                'level'         => $levelCount,
-                'gi'            => $approved->where('sale_type', 'gi')->count(),
-                'level_pct'     => $mtd > 0 ? round(($levelCount / $mtd) * 100) : 0,
-                'avg_pre'       => $approved->avg('avg_pre') ? round($approved->avg('avg_pre'), 2) : 0,
-                'calls'         => $calls,
-                'conversion'    => $mtd > 0 ? round($calls / $mtd, 2) : 0,
-                'avg_talk_time' => $match['avg_talk_time'] ?? '-',
+                'closer'           => $closer->name ?? 'Unknown',
+                'team'             => $closer->team->name ?? '-',
+                'working_days'     => $workingDays,
+                'mtd'              => $mtd,
+                'spd'              => $workingDays > 0 ? round($mtd / $workingDays, 1) : 0,
+                'level'            => $levelCount,
+                'gi'               => $approved->where('sale_type', 'gi')->count(),
+                'level_pct'        => $mtd > 0 ? round(($levelCount / $mtd) * 100) : 0,
+                'client_breakdown' => $clientBreakdown,
+                'avg_pre'          => $approved->avg('avg_pre') ? round($approved->avg('avg_pre'), 2) : 0,
+                'calls'            => $calls,
+                'conversion'       => $mtd > 0 ? round($calls / $mtd, 2) : 0,
+                'avg_talk_time'    => $match['avg_talk_time'] ?? '-',
             ];
         })
         ->filter()  // Remove null entries (orphaned closers)
@@ -509,10 +518,17 @@ public function teamWiseClosersBoard(?string $from = null, ?string $to = null): 
     })->all(),
 ];
 
+            $teamModel = \App\Models\SalesTeam::where('name', $teamName)->first();
+            $totalTeamClosers = $teamModel ? \App\Models\SalesCloser::where('sales_team_id', $teamModel->id)->where('active', true)->count() : $count;
+            if ($totalTeamClosers === 0) {
+                $totalTeamClosers = max($count, 1);
+            }
+
             $averages = [
+                'total_closers'=> $totalTeamClosers,
                 'working_days' => $count > 0 ? round($sum('working_days') / $count, 1) : 0,
                 'mtd'          => $count > 0 ? round($sum('mtd') / $count, 1) : 0,
-                'spd'          => $count > 0 ? round($sum('spd') / $count, 1) : 0,
+                'spd'          => $totalTeamClosers > 0 ? round($totals['mtd'] / $totalTeamClosers, 2) : 0,
                 'level'        => $count > 0 ? round($sum('level') / $count, 1) : 0,
                 'gi'           => $count > 0 ? round($sum('gi') / $count, 1) : 0,
                 'level_pct'    => $totals['mtd'] > 0 ? round(($totals['level'] / $totals['mtd']) * 100, 2) : 0,
@@ -520,10 +536,11 @@ public function teamWiseClosersBoard(?string $from = null, ?string $to = null): 
             ];
 
             return [
-                'name'     => $teamName,
-                'closers'  => $closers,
-                'totals'   => $totals,
-                'averages' => $averages,
+                'name'          => $teamName,
+                'total_closers' => $totalTeamClosers,
+                'closers'       => $closers,
+                'totals'        => $totals,
+                'averages'      => $averages,
             ];
         })
         ->sortByDesc(fn ($t) => $t['totals']['mtd'])
@@ -988,19 +1005,28 @@ public function teamsSummaryTable(array $mergedTeams): array
 
         $target = \App\Models\SalesTeam::where('name', $team['name'])->value('target') ?? 0;
 
+        $teamModel = \App\Models\SalesTeam::where('name', $team['name'])->first();
+        $totalClosers = $teamModel ? \App\Models\SalesCloser::where('sales_team_id', $teamModel->id)->where('active', true)->count() : count($team['closers']);
+        if ($totalClosers === 0) {
+            $totalClosers = max(count($team['closers']), 1);
+        }
+
+        $approved = $team['totals']['mtd'];
+        $spd = round($approved / $totalClosers, 2);
+
         return [
             'team'          => $team['name'],
-            'closers'       => count($team['closers']),
-            'approved'      => $team['totals']['mtd'],
+            'closers'       => $totalClosers,
+            'approved'      => $approved,
             'level'         => $team['totals']['level'],
             'gi'            => $team['totals']['gi'],
             'level_pct'     => $team['averages']['level_pct'],
-            'spd'           => $team['averages']['spd'],
+            'spd'           => $spd,
             'avg_pre'       => $team['averages']['avg_pre'],
             'calls'         => $team['totals']['calls'] ?? 0,
             'avg_talk_time' => $team['totals']['avg_talk_time'] ?? '-',
             'target'        => $target,
-            'left'          => max($target - $team['totals']['mtd'], 0),
+            'left'          => max($target - $approved, 0),
             'last_sale'     => $lastSaleTimes[$team['name']] ?? '-',
         ];
     }, $mergedTeams)));
@@ -1045,13 +1071,15 @@ public function teamsSummaryTotals(array $teamsSummary): array
     }
     $avgTalkSeconds = $totalCalls > 0 ? intdiv($weightedSeconds, $totalCalls) : 0;
 
+    $totalClosers = array_sum(array_column($teamsSummary, 'closers'));
+
     return [
-        'closers'       => array_sum(array_column($teamsSummary, 'closers')),
+        'closers'       => $totalClosers,
         'approved'      => $approved,
         'level'         => $level,
         'gi'            => array_sum(array_column($teamsSummary, 'gi')),
         'level_pct'     => $approved > 0 ? round(($level / $approved) * 100) : 0,
-        'spd'           => round(array_sum(array_column($teamsSummary, 'spd')) / $count, 1),
+        'spd'           => $totalClosers > 0 ? round($approved / $totalClosers, 2) : 0,
         'avg_pre'       => round(array_sum(array_column($teamsSummary, 'avg_pre')) / $count),
         'avg_talk_time' => $this->secondsToHms($avgTalkSeconds),
         'target'        => array_sum(array_column($teamsSummary, 'target')),

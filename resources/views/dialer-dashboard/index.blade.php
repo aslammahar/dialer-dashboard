@@ -272,7 +272,7 @@
         <table class="dd-lb-table" id="ddTeamsTable">
          <thead>
     <tr>
-        <th>Last Sale</th><th>Team</th><th>Approved</th><th>Level</th><th>GI</th>
+        <th>Last Sale</th><th>Team</th><th style="text-align:center">Total Closers</th><th>Approved</th><th>Level</th><th>GI</th>
         <th>Level %</th><th>SPD</th><th>Avg Pre</th><th>Avg Talk Time</th>
         <th>Target</th><th>Left</th>
     </tr>
@@ -282,6 +282,7 @@
         <tr>
             <td>{{ $t['last_sale'] }}</td>
             <td>{{ $t['team'] }}</td>
+            <td style="text-align:center"><span class="dd-lb-team" style="background:rgba(52,245,197,.12);color:#34f5c5">{{ $t['closers'] }}</span></td>
             <td>{{ $t['approved'] }}</td>
             <td>{{ $t['level'] }}</td>
             <td>{{ $t['gi'] }}</td>
@@ -301,6 +302,7 @@
     <tr>
         <td>Total / Avg</td>
         <td>-</td>
+        <td style="text-align:center">{{ $teamsSummaryTotals['closers'] }}</td>
         <td>{{ $teamsSummaryTotals['approved'] }}</td>
         <td>{{ $teamsSummaryTotals['level'] }}</td>
         <td>{{ $teamsSummaryTotals['gi'] }}</td>
@@ -470,6 +472,7 @@
                     <th>Avatar/Jcs Calls</th>
                     <th>Conversion </th>
                     <th>Avg Talk Time</th>
+                    <th>Clients</th>
                 </tr>
             </thead>
             <tbody>
@@ -493,10 +496,21 @@
                         <td>{{ $p['calls'] }}</td>
                         <td style="color:#22c55e;font-weight:600">{{ $p['conversion'] }}</td>
                         <td>{{ $p['avg_talk_time'] }}</td>
+                               <td>
+                            @if(!empty($p['client_breakdown']))
+                                <div style="display:flex;flex-wrap:wrap;gap:4px">
+                                @foreach($p['client_breakdown'] as $cName => $cCnt)
+                                    <span style="background:rgba(52,245,197,.12);color:#34f5c5;border:1px solid rgba(52,245,197,.25);border-radius:4px;padding:1px 6px;font-size:10.5px;white-space:nowrap">{{ $cName }}: <b>{{ $cCnt }}</b></span>
+                                @endforeach
+                                </div>
+                            @else
+                                <span style="color:var(--dd-text-muted)">—</span>
+                            @endif
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="13" style="text-align:center;color:var(--dd-text-muted);padding:20px">
+                        <td colspan="14" style="text-align:center;color:var(--dd-text-muted);padding:20px">
                             No sales data yet this month.
                         </td>
                     </tr>
@@ -516,6 +530,7 @@
         <td>{{ $monthlyPerformanceTotals['calls_total'] }} <span style="color:var(--dd-text-muted);font-size:10.5px">(avg {{ $monthlyPerformanceTotals['calls_avg'] }})</span></td>
         <td>{{ $monthlyPerformanceTotals['conversion_avg'] }}</td>
         <td>{{ $monthlyPerformanceTotals['avg_talk_time_avg'] }}</td>
+         <td>-</td>
     </tr>
 </tfoot>
 @endif
@@ -619,23 +634,56 @@
     }
 
     function renderTeamRow(t) {
-    return '<tr>' +
-        '<td>' + t.last_sale + '</td>' +
-        '<td>' + t.team + '</td>' +
-        '<td>' + t.approved + '</td>' +
-        '<td>' + t.level + '</td>' +
-        '<td>' + t.gi + '</td>' +
-        '<td>' + t.level_pct + '%</td>' +
-        '<td>' + t.spd + '</td>' +
-        '<td>' + t.avg_pre + '</td>' +
-        '<td>' + t.avg_talk_time + '</td>' +
-        '<td>' + t.target + '</td>' +
-        '<td>' + t.left + '</td>' +
-    '</tr>';
-}
+        return '<tr>' +
+            '<td>' + t.last_sale + '</td>' +
+            '<td>' + t.team + '</td>' +
+            '<td style="text-align:center"><span class="dd-lb-team" style="background:rgba(52,245,197,.12);color:#34f5c5">' + t.closers + '</span></td>' +
+            '<td>' + t.approved + '</td>' +
+            '<td>' + t.level + '</td>' +
+            '<td>' + t.gi + '</td>' +
+            '<td>' + t.level_pct + '%</td>' +
+            '<td>' + t.spd + '</td>' +
+            '<td>' + t.avg_pre + '</td>' +
+            '<td>' + t.avg_talk_time + '</td>' +
+            '<td>' + t.target + '</td>' +
+            '<td>' + t.left + '</td>' +
+        '</tr>';
+    }
 
     function sum(arr, key) {
         return arr.reduce(function(s, r){ return s + (r[key] || 0); }, 0);
+    }
+
+    var prevTeamRanks = {};
+    function checkTeamOvertake(teamsSummary) {
+        if (!firstRun && teamsSummary && teamsSummary.length > 0) {
+            for (var i = 0; i < teamsSummary.length; i++) {
+                var t = teamsSummary[i];
+                var teamName = t.team;
+                var currentRank = i + 1;
+                var currentSales = t.approved;
+
+                var oldRank = prevTeamRanks[teamName];
+                if (oldRank && currentRank < oldRank) {
+                    var passedTeam = null;
+                    for (var otherTeam in prevTeamRanks) {
+                        if (otherTeam !== teamName && prevTeamRanks[otherTeam] < oldRank && prevTeamRanks[otherTeam] >= currentRank) {
+                            passedTeam = otherTeam;
+                            break;
+                        }
+                    }
+                    if (passedTeam && typeof window.ddCelebrateTeamOvertake === 'function') {
+                        window.ddCelebrateTeamOvertake(teamName, passedTeam, currentSales);
+                        break;
+                    }
+                }
+            }
+        }
+
+        prevTeamRanks = {};
+        for (var j = 0; j < teamsSummary.length; j++) {
+            prevTeamRanks[teamsSummary[j].team] = j + 1;
+        }
     }
 
     function poll() {
@@ -731,7 +779,7 @@
                             '<td>' + (Math.round((sum(data.carriers_summary, 'avg_pre') / data.carriers_summary.length) * 100) / 100) + '</td>';
                     }
                 }
-// Teams Summary
+                // Teams Summary
                 var teamsTable = document.getElementById('ddTeamsTable');
                 if (teamsTable) {
                     var tBody = teamsTable.querySelector('tbody');
@@ -744,6 +792,7 @@
                         var tt = data.teams_summary_totals;
                         tTf.innerHTML =
                             '<td>Total / Avg</td><td>-</td>' +
+                            '<td style="text-align:center">' + tt.closers + '</td>' +
                             '<td>' + tt.approved + '</td>' +
                             '<td>' + tt.level + '</td>' +
                             '<td>' + tt.gi + '</td>' +
@@ -754,6 +803,8 @@
                             '<td>' + tt.target + '</td>' +
                             '<td>' + tt.left + '</td>';
                     }
+
+                    checkTeamOvertake(data.teams_summary);
                 }
                 // Celebration on new approved sale
                 if (!firstRun && data.latest_id && data.latest_id !== lastLatestId) {

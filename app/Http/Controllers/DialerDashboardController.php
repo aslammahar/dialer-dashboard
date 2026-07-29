@@ -166,6 +166,9 @@ public function liveBoard(Request $request)
     $teamsSummary       = $salesService->teamsSummaryTable($mergedTeams);
     $teamsSummaryTotals = $salesService->teamsSummaryTotals($teamsSummary);
 
+    $monthlyPerformance = $salesService->monthlyPerformanceRanking(null, $leaderboard);
+    $monthlyPerformanceTotals = $salesService->monthlyPerformanceTotals($monthlyPerformance);
+
     $latestApproved = \App\Models\DailySalesEntry::with('closer')
         ->where('status', 'approved')
         ->whereDate('entry_date', $todayNY)
@@ -173,16 +176,18 @@ public function liveBoard(Request $request)
         ->first();
 
     return response()->json([
-        'board'                => $dailyBoard,
-        'totals'               => $dailyBoardTotals,
-        'active_stats'         => $activeStats,
-        'closer_counts'        => $closerCounts,
-        'clients_summary'      => $clientsSummary,
-        'carriers_summary'     => $carriersSummary,
-        'teams_summary'        => $teamsSummary,
-        'teams_summary_totals' => $teamsSummaryTotals,
-        'latest_id'            => $latestApproved->id ?? null,
-        'latest_closer'        => $latestApproved->closer->name ?? null,
+        'board'                      => $dailyBoard,
+        'totals'                     => $dailyBoardTotals,
+        'active_stats'               => $activeStats,
+        'closer_counts'              => $closerCounts,
+        'clients_summary'            => $clientsSummary,
+        'carriers_summary'           => $carriersSummary,
+        'teams_summary'              => $teamsSummary,
+        'teams_summary_totals'       => $teamsSummaryTotals,
+        'monthly_performance'        => $monthlyPerformance,
+        'monthly_performance_totals' => $monthlyPerformanceTotals,
+        'latest_id'                  => $latestApproved->id ?? null,
+        'latest_closer'              => $latestApproved->closer->name ?? null,
     ]);
 }
 
