@@ -269,7 +269,7 @@
         <a href="{{ route('sales-reports.team-wise') }}" class="dd-apply" style="text-decoration:none">Manage Teams</a>
     </div>
     <div class="dd-lb-scroll">
-        <table class="dd-lb-table">
+        <table class="dd-lb-table" id="ddTeamsTable">
          <thead>
     <tr>
         <th>Last Sale</th><th>Team</th><th>Approved</th><th>Level</th><th>GI</th>
@@ -600,6 +600,22 @@
         '</tr>';
     }
 
+    function renderTeamRow(t) {
+    return '<tr>' +
+        '<td>' + t.last_sale + '</td>' +
+        '<td>' + t.team + '</td>' +
+        '<td>' + t.approved + '</td>' +
+        '<td>' + t.level + '</td>' +
+        '<td>' + t.gi + '</td>' +
+        '<td>' + t.level_pct + '%</td>' +
+        '<td>' + t.spd + '</td>' +
+        '<td>' + t.avg_pre + '</td>' +
+        '<td>' + t.avg_talk_time + '</td>' +
+        '<td>' + t.target + '</td>' +
+        '<td>' + t.left + '</td>' +
+    '</tr>';
+}
+
     function sum(arr, key) {
         return arr.reduce(function(s, r){ return s + (r[key] || 0); }, 0);
     }
@@ -697,7 +713,30 @@
                             '<td>' + (Math.round((sum(data.carriers_summary, 'avg_pre') / data.carriers_summary.length) * 100) / 100) + '</td>';
                     }
                 }
+// Teams Summary
+                var teamsTable = document.getElementById('ddTeamsTable');
+                if (teamsTable) {
+                    var tBody = teamsTable.querySelector('tbody');
+                    tBody.innerHTML = data.teams_summary.length === 0
+                        ? '<tr><td colspan="12" style="text-align:center;color:var(--dd-text-muted);padding:16px">No team data yet.</td></tr>'
+                        : data.teams_summary.map(renderTeamRow).join('');
 
+                    var tTf = teamsTable.querySelector('tfoot tr');
+                    if (tTf && data.teams_summary.length > 0) {
+                        var tt = data.teams_summary_totals;
+                        tTf.innerHTML =
+                            '<td>Total / Avg</td><td>-</td>' +
+                            '<td>' + tt.approved + '</td>' +
+                            '<td>' + tt.level + '</td>' +
+                            '<td>' + tt.gi + '</td>' +
+                            '<td>' + tt.level_pct + '%</td>' +
+                            '<td>' + tt.spd + '</td>' +
+                            '<td>' + tt.avg_pre + '</td>' +
+                            '<td>' + tt.avg_talk_time + '</td>' +
+                            '<td>' + tt.target + '</td>' +
+                            '<td>' + tt.left + '</td>';
+                    }
+                }
                 // Celebration on new approved sale
                 if (!firstRun && data.latest_id && data.latest_id !== lastLatestId) {
                     window.ddCelebrateSale(data.latest_closer);

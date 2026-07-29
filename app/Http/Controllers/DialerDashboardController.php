@@ -159,6 +159,11 @@ public function liveBoard(Request $request)
     $clientsSummary   = $salesService->clientsSummaryTable($todayNY, $todayNY);
     $carriersSummary  = $salesService->carriersSummaryTable($todayNY, $todayNY);
 
+    $teamBoard          = $salesService->teamWiseClosersBoard($todayNY, $todayNY);
+    $mergedTeams        = $salesService->mergeDialerStatsIntoTeams($teamBoard['teams'], $leaderboard);
+    $teamsSummary       = $salesService->teamsSummaryTable($mergedTeams);
+    $teamsSummaryTotals = $salesService->teamsSummaryTotals($teamsSummary);
+
     $latestApproved = \App\Models\DailySalesEntry::with('closer')
         ->where('status', 'approved')
         ->whereDate('entry_date', $todayNY)
@@ -166,14 +171,16 @@ public function liveBoard(Request $request)
         ->first();
 
     return response()->json([
-        'board'            => $dailyBoard,
-        'totals'           => $dailyBoardTotals,
-        'active_stats'      => $activeStats,
-        'closer_counts'     => $closerCounts,
-        'clients_summary'   => $clientsSummary,
-        'carriers_summary'  => $carriersSummary,
-        'latest_id'         => $latestApproved->id ?? null,
-        'latest_closer'     => $latestApproved->closer->name ?? null,
+        'board'                => $dailyBoard,
+        'totals'               => $dailyBoardTotals,
+        'active_stats'         => $activeStats,
+        'closer_counts'        => $closerCounts,
+        'clients_summary'      => $clientsSummary,
+        'carriers_summary'     => $carriersSummary,
+        'teams_summary'        => $teamsSummary,
+        'teams_summary_totals' => $teamsSummaryTotals,
+        'latest_id'            => $latestApproved->id ?? null,
+        'latest_closer'        => $latestApproved->closer->name ?? null,
     ]);
 }
 
