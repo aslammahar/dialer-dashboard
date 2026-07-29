@@ -102,6 +102,7 @@ $teamsSummary       = $salesService->teamsSummaryTable($mergedTeams);
 $teamsSummaryTotals = $salesService->teamsSummaryTotals($teamsSummary);
 $clientsSummary     = $salesService->clientsSummaryTable($todayNY, $todayNY);
 $carriersSummary    = $salesService->carriersSummaryTable($todayNY, $todayNY);
+$monthlyPerformanceTotals = $salesService->monthlyPerformanceTotals($monthlyPerformance);
 
     return view('dialer-dashboard.index', [
         'filters'           => $filters,
@@ -129,6 +130,7 @@ $carriersSummary    = $salesService->carriersSummaryTable($todayNY, $todayNY);
         'teamsSummaryTotals' => $teamsSummaryTotals,
 'clientsSummary'  => $clientsSummary,
 'carriersSummary' => $carriersSummary,
+'monthlyPerformanceTotals' => $monthlyPerformanceTotals,
 
 
     ]);

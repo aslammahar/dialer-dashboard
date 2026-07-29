@@ -502,6 +502,24 @@
                     </tr>
                 @endforelse
             </tbody>
+@if(count($monthlyPerformance))
+<tfoot>
+    <tr>
+        <td colspan="3">Total / Avg</td>
+        <td>{{ $monthlyPerformanceTotals['working_days_avg'] }}</td>
+        <td>{{ $monthlyPerformanceTotals['mtd_total'] }} <span style="color:var(--dd-text-muted);font-size:10.5px">(avg {{ $monthlyPerformanceTotals['mtd_avg'] }})</span></td>
+        <td>{{ $monthlyPerformanceTotals['spd_avg'] }}</td>
+        <td>{{ $monthlyPerformanceTotals['level_total'] }} <span style="color:var(--dd-text-muted);font-size:10.5px">(avg {{ $monthlyPerformanceTotals['level_avg'] }})</span></td>
+        <td>{{ $monthlyPerformanceTotals['gi_total'] }} <span style="color:var(--dd-text-muted);font-size:10.5px">(avg {{ $monthlyPerformanceTotals['gi_avg'] }})</span></td>
+        <td>{{ $monthlyPerformanceTotals['level_pct_avg'] }}%</td>
+        <td>{{ $monthlyPerformanceTotals['avg_pre_avg'] }}</td>
+        <td>{{ $monthlyPerformanceTotals['calls_total'] }} <span style="color:var(--dd-text-muted);font-size:10.5px">(avg {{ $monthlyPerformanceTotals['calls_avg'] }})</span></td>
+        <td>{{ $monthlyPerformanceTotals['conversion_avg'] }}</td>
+        <td>{{ $monthlyPerformanceTotals['avg_talk_time_avg'] }}</td>
+    </tr>
+</tfoot>
+@endif
+
         </table>
     </div>
 </div>

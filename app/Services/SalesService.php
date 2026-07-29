@@ -133,6 +133,16 @@ public function monthlyPerformanceRanking(?string $month = null, array $dialerLe
         ->whereBetween('entry_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
         ->get();
 
+    // Real attendance-based working days per closer this month — NOT
+    // derived from sales entries (a closer can be present 4 days but only
+    // sell on 1-2 of them; "Working Days" must reflect attendance).
+    $workingDaysByCloser = \App\Models\ClosersAttendance::where('status', 'present')
+        ->whereBetween('attendance_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+        ->get()
+        ->groupBy('sales_closer_id')
+        ->map(fn ($rows) => $rows->count())
+        ->all();
+
     $exactLookup = [];
     $firstNameLookup = [];
     foreach ($dialerLeaderboard as $agent) {
@@ -146,12 +156,21 @@ public function monthlyPerformanceRanking(?string $month = null, array $dialerLe
 
     $rows = $entries
         ->groupBy('sales_closer_id')
-        ->map(function ($rows) use ($exactLookup, $firstNameLookup) {
+        ->map(function ($rows) use ($exactLookup, $firstNameLookup, $workingDaysByCloser) {
             $closer = $rows->first()->closer;
+
+            // Skip orphaned entries where closer has been deleted
+            if (! $closer) {
+                return null;
+            }
+
             $approved = $rows->where('status', 'approved');
             $levelCount = $approved->where('sale_type', 'level')->count();
             $mtd = $approved->count();
-            $workingDays = $rows->pluck('entry_date')->map(fn ($d) => $d->toDateString())->unique()->count();
+
+            // Attendance-based working days — falls back to 0 if no
+            // attendance was ever marked for this closer this month.
+            $workingDays = $workingDaysByCloser[$closer->id] ?? 0;
 
             $closerName = strtolower(trim($closer->name ?? ''));
             $firstName = strtolower(trim(explode(' ', $closer->name ?? '')[0]));
@@ -169,11 +188,11 @@ public function monthlyPerformanceRanking(?string $month = null, array $dialerLe
                 'level_pct'     => $mtd > 0 ? round(($levelCount / $mtd) * 100) : 0,
                 'avg_pre'       => $approved->avg('avg_pre') ? round($approved->avg('avg_pre'), 2) : 0,
                 'calls'         => $calls,
-                // calls per sale — lower is better (matches sheet's "Inbound Calls Conversion")
                 'conversion'    => $mtd > 0 ? round($calls / $mtd, 2) : 0,
                 'avg_talk_time' => $match['avg_talk_time'] ?? '-',
             ];
         })
+        ->filter()  // Remove null entries (orphaned closers)
         ->values()
         ->all();
 
@@ -184,16 +203,12 @@ public function monthlyPerformanceRanking(?string $month = null, array $dialerLe
     $maxMtd      = max(array_column($rows, 'mtd')) ?: 1;
     $maxLevelPct = 100;
 
-    // Only consider rows with a real conversion value (>0) when finding the best (lowest)
     $positiveConversions = array_filter(array_column($rows, 'conversion'), fn ($c) => $c > 0);
     $minConversion = ! empty($positiveConversions) ? min($positiveConversions) : 0;
 
     foreach ($rows as &$row) {
         $salesScore = $row['mtd'] / $maxMtd;
         $levelScore = $row['level_pct'] / $maxLevelPct;
-
-        // Conversion is "calls per sale" — lower is better, so invert it:
-        // best (lowest) conversion scores closest to 1, worse (higher) scores lower.
         $conversionScore = $row['conversion'] > 0 && $minConversion > 0
             ? $minConversion / $row['conversion']
             : 0;
@@ -215,6 +230,53 @@ public function monthlyPerformanceRanking(?string $month = null, array $dialerLe
     return $rows;
 }
 
+
+public function monthlyPerformanceTotals(array $rows): array
+{
+    $count = count($rows);
+    if ($count === 0) {
+        return [
+            'working_days_avg' => 0, 'mtd_total' => 0, 'mtd_avg' => 0,
+            'spd_avg' => 0, 'level_total' => 0, 'level_avg' => 0,
+            'gi_total' => 0, 'gi_avg' => 0, 'level_pct_avg' => 0,
+            'avg_pre_avg' => 0, 'calls_total' => 0, 'calls_avg' => 0,
+            'conversion_avg' => 0, 'avg_talk_time_avg' => '0:00:00',
+        ];
+    }
+
+    $mtdTotal   = array_sum(array_column($rows, 'mtd'));
+    $levelTotal = array_sum(array_column($rows, 'level'));
+    $giTotal    = array_sum(array_column($rows, 'gi'));
+    $callsTotal = array_sum(array_column($rows, 'calls'));
+
+    $weightedSeconds = 0;
+    $callsCounted = 0;
+    foreach ($rows as $r) {
+        $c = $r['calls'] ?? 0;
+        if ($c > 0 && ($r['avg_talk_time'] ?? '-') !== '-') {
+            $weightedSeconds += $this->hmsToSeconds($r['avg_talk_time']) * $c;
+            $callsCounted += $c;
+        }
+    }
+    $avgTalkSeconds = $callsCounted > 0 ? intdiv($weightedSeconds, $callsCounted) : 0;
+
+    return [
+        'working_days_avg' => round(array_sum(array_column($rows, 'working_days')) / $count, 1),
+        'mtd_total'        => $mtdTotal,
+        'mtd_avg'          => round($mtdTotal / $count, 1),
+        'spd_avg'          => round(array_sum(array_column($rows, 'spd')) / $count, 1),
+        'level_total'      => $levelTotal,
+        'level_avg'        => round($levelTotal / $count, 1),
+        'gi_total'         => $giTotal,
+        'gi_avg'           => round($giTotal / $count, 1),
+        'level_pct_avg'    => $mtdTotal > 0 ? round(($levelTotal / $mtdTotal) * 100) : 0,
+        'avg_pre_avg'      => round(array_sum(array_column($rows, 'avg_pre')) / $count, 2),
+        'calls_total'      => $callsTotal,
+        'calls_avg'        => round($callsTotal / $count, 1),
+        'conversion_avg'   => $mtdTotal > 0 ? round($callsTotal / $mtdTotal, 2) : 0,
+        'avg_talk_time_avg'=> $this->secondsToHms($avgTalkSeconds),
+    ];
+}
 public function rankedPerformersToday(array $dailyBoard): array
 {
     $rows = collect($dailyBoard)
