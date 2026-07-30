@@ -15,6 +15,7 @@ protected array $editorEmails = [
     'ubaid.khan@jsonscommunication.com',
     'hussamjanjua@jsons.com',
     'furqankashif@jsons.com',
+    'sheikh.noman@jsonscommunication.com',
 ];
     public function index(Request $request)
 {

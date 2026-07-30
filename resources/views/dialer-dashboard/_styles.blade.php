@@ -322,4 +322,27 @@
         50%{box-shadow:0 0 0 5px rgba(255,176,32,0)}
     }
     .dd-rank.r1{animation:dd-trophy-pulse 2.2s ease-in-out infinite}
+
+    /* Today's Top Closer Card */
+    .dd-top-closer-card{display:flex;align-items:center;gap:20px;margin-top:16px;
+        background:linear-gradient(135deg,rgba(52,245,197,.08) 0%,rgba(17,22,29,.95) 60%);
+        border:1.5px solid rgba(52,245,197,.3);border-radius:14px;padding:18px 24px;
+        position:relative;overflow:hidden;animation:dd-rise .5s ease forwards;opacity:0;transform:translateY(10px)}
+    .dd-top-closer-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+        background:linear-gradient(90deg,var(--dd-accent),var(--dd-gold),var(--dd-accent))}
+    .dd-top-closer-card::after{content:'';position:absolute;top:-50%;right:-20%;width:200px;height:200px;
+        background:radial-gradient(circle,rgba(52,245,197,.06),transparent 70%);pointer-events:none}
+    .dd-top-closer-trophy{font-size:42px;filter:drop-shadow(0 4px 12px rgba(255,176,32,.35));
+        animation:dd-trophy-bounce 2s ease-in-out infinite}
+    @keyframes dd-trophy-bounce{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-6px) rotate(3deg)}}
+    .dd-top-closer-info{flex:1;min-width:0}
+    .dd-top-closer-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--dd-gold);font-weight:700;margin-bottom:4px}
+    .dd-top-closer-name{font-family:var(--dd-font-display);font-size:22px;font-weight:700;color:var(--dd-text);
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .dd-top-closer-team{font-size:12px;color:var(--dd-text-sec);margin-top:2px}
+    .dd-top-closer-stats{display:flex;gap:16px}
+    .dd-top-closer-stat{display:flex;flex-direction:column;align-items:center;gap:3px;
+        background:rgba(255,255,255,.04);border:1px solid var(--dd-border);border-radius:10px;padding:10px 16px;min-width:68px}
+    .dd-top-closer-stat-val{font-family:var(--dd-font-mono);font-size:20px;font-weight:600;color:var(--dd-accent)}
+    .dd-top-closer-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--dd-text-muted)}
 </style>

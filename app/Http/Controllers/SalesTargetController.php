@@ -29,6 +29,7 @@ class SalesTargetController extends Controller
             'ubaid.khan@jsonscommunication.com',
             'hussamjanjua@jsons.com',
             'furqankashif@jsons.com',
+            'sheikh.noman@jsonscommunication.com',
     ]);
 }
     

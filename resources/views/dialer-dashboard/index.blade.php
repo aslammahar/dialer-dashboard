@@ -202,6 +202,46 @@
     </div>
 </div>
 
+@php
+    // Find today's top closer (highest level + approved)
+    $topCloser = null;
+    $topScore = 0;
+    foreach ($dailyBoard as $row) {
+        $score = ($row['level'] ?? 0) + ($row['approved'] ?? 0);
+        if ($score > $topScore) {
+            $topScore = $score;
+            $topCloser = $row;
+        }
+    }
+@endphp
+
+<div class="dd-top-closer-card" id="ddTopCloserCard" style="{{ !$topCloser ? 'display:none' : '' }}">
+    <div class="dd-top-closer-trophy">🏆</div>
+    <div class="dd-top-closer-info">
+        <div class="dd-top-closer-label">Today's Top Closer</div>
+        <div class="dd-top-closer-name" id="ddTopCloserName">{{ $topCloser['closer'] ?? '-' }}</div>
+        <div class="dd-top-closer-team" id="ddTopCloserTeam">{{ $topCloser['team'] ?? '' }}</div>
+    </div>
+    <div class="dd-top-closer-stats">
+        <div class="dd-top-closer-stat">
+            <span class="dd-top-closer-stat-val" id="ddTopCloserApproved">{{ $topCloser['approved'] ?? 0 }}</span>
+            <span class="dd-top-closer-stat-lbl">Approved</span>
+        </div>
+        <div class="dd-top-closer-stat">
+            <span class="dd-top-closer-stat-val" id="ddTopCloserLevel">{{ $topCloser['level'] ?? 0 }}</span>
+            <span class="dd-top-closer-stat-lbl">Level</span>
+        </div>
+        <div class="dd-top-closer-stat">
+            <span class="dd-top-closer-stat-val" id="ddTopCloserGI">{{ $topCloser['gi'] ?? 0 }}</span>
+            <span class="dd-top-closer-stat-lbl">GI</span>
+        </div>
+        <div class="dd-top-closer-stat">
+            <span class="dd-top-closer-stat-val" id="ddTopCloserLevelPct">{{ $topCloser['level_pct'] ?? 0 }}%</span>
+            <span class="dd-top-closer-stat-lbl">Level %</span>
+        </div>
+    </div>
+</div>
+
     <div class="dd-panel" style="margin-top:16px">
         <div class="dd-panel-head">
             <div>
@@ -743,6 +783,31 @@
                             '<td>' + data.totals.calls + '</td>' +
                             '<td>' + data.totals.avg_talk_time + '</td>';
                     }
+                }
+
+                // Today's Top Closer
+                var topCloserCard = document.getElementById('ddTopCloserCard');
+                if (topCloserCard && data.board.length > 0) {
+                    var topCloser = null;
+                    var topScore = 0;
+                    data.board.forEach(function(row) {
+                        var score = (row.level || 0) + (row.approved || 0);
+                        if (score > topScore) {
+                            topScore = score;
+                            topCloser = row;
+                        }
+                    });
+                    if (topCloser) {
+                        topCloserCard.style.display = '';
+                        document.getElementById('ddTopCloserName').textContent = topCloser.closer;
+                        document.getElementById('ddTopCloserTeam').textContent = topCloser.team;
+                        document.getElementById('ddTopCloserApproved').textContent = topCloser.approved;
+                        document.getElementById('ddTopCloserLevel').textContent = topCloser.level;
+                        document.getElementById('ddTopCloserGI').textContent = topCloser.gi;
+                        document.getElementById('ddTopCloserLevelPct').textContent = topCloser.level_pct + '%';
+                    }
+                } else if (topCloserCard) {
+                    topCloserCard.style.display = 'none';
                 }
 
                 // Stat cards

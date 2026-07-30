@@ -2855,6 +2855,7 @@ private function canEdit(): bool
             'ubaid.khan@jsonscommunication.com',
             'hussamjanjua@jsons.com',
             'furqankashif@jsons.com',
+            'sheikh.noman@jsonscommunication.com',
     ]);
 }
 public function monthlyReports(Request $request)
