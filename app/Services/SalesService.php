@@ -459,6 +459,12 @@ public function teamWiseClosersBoard(?string $from = null, ?string $to = null): 
     $from = $from ?? now()->startOfMonth()->toDateString();
     $to   = $to ?? now()->toDateString();
 
+    $presentCloserIds = \App\Models\ClosersAttendance::where('status', 'present')
+        ->whereBetween('attendance_date', [$from, $to])
+        ->pluck('sales_closer_id')
+        ->unique()
+        ->toArray();
+
     $entries = DailySalesEntry::with(['closer.team', 'team', 'client'])
         ->whereBetween('entry_date', [$from, $to])
         ->get();
@@ -467,7 +473,7 @@ public function teamWiseClosersBoard(?string $from = null, ?string $to = null): 
 
     $teams = $entries
         ->groupBy(fn ($e) => $e->closer->team->name ?? 'Unassigned')
-        ->map(function ($teamEntries, $teamName) use ($clientNames) {
+        ->map(function ($teamEntries, $teamName) use ($clientNames, $presentCloserIds) {
             $closers = $teamEntries
                 ->groupBy('sales_closer_id')
                 ->map(function ($rows) use ($clientNames) {
@@ -519,7 +525,12 @@ public function teamWiseClosersBoard(?string $from = null, ?string $to = null): 
 ];
 
             $teamModel = \App\Models\SalesTeam::where('name', $teamName)->first();
-            $totalTeamClosers = $teamModel ? \App\Models\SalesCloser::where('sales_team_id', $teamModel->id)->where('active', true)->count() : $count;
+            $totalTeamClosers = $count;
+            if ($teamModel) {
+                $totalTeamClosers = \App\Models\SalesCloser::where('sales_team_id', $teamModel->id)
+                    ->whereIn('id', $presentCloserIds)
+                    ->count();
+            }
             if ($totalTeamClosers === 0) {
                 $totalTeamClosers = max($count, 1);
             }
@@ -663,6 +674,60 @@ public function mergeDialerStats(array $board, array $dialerLeaderboard): array
 
         return $row;
     }, $board);
+}
+
+/**
+ * Sort the daily board using a blended performance score — same approach
+ * as monthlyPerformanceRanking but applied to today's numbers:
+ *   approved  → 50%  (more sales = higher score)
+ *   level_pct → 15%  (higher level% = higher score)
+ *   calls/approved ratio (conversion efficiency) → 35%
+ *              lower calls-per-sale = more efficient = higher score
+ *
+ * Closers with zero approved sales are pushed to the bottom.
+ */
+public function sortDailyBoardByScore(array $board): array
+{
+    if (empty($board)) {
+        return $board;
+    }
+
+    $maxApproved = max(array_column($board, 'approved')) ?: 1;
+    $maxLevelPct = 100;
+
+    // Conversion = calls / approved (lower is better, like monthly logic)
+    $conversions = array_filter(
+        array_map(fn ($r) => ($r['approved'] ?? 0) > 0 && ($r['calls'] ?? 0) > 0
+            ? ($r['calls'] / $r['approved'])
+            : null,
+        $board),
+        fn ($v) => $v !== null
+    );
+    $minConversion = !empty($conversions) ? min($conversions) : 0;
+
+    foreach ($board as &$row) {
+        $approved = $row['approved'] ?? 0;
+        $calls    = $row['calls']    ?? 0;
+
+        $salesScore     = $approved / $maxApproved;
+        $levelScore     = ($row['level_pct'] ?? 0) / $maxLevelPct;
+        $conversionRatio = ($approved > 0 && $calls > 0) ? ($approved / $calls) : 0;
+        $conversionScore = $conversionRatio > 0 ? $conversionRatio : 0;
+
+        // Normalize conversion score so best possible = 1
+        $maxConvRatio = $maxApproved > 0 ? 1 : 1; // 1 sale per call is best possible
+        $conversionScore = min($conversionScore, 1);
+
+        $row['score'] = round(
+            ($salesScore * 0.50) + ($conversionScore * 0.35) + ($levelScore * 0.15),
+            4
+        );
+    }
+    unset($row);
+
+    usort($board, fn ($a, $b) => $b['score'] <=> $a['score']);
+
+    return array_values($board);
 }
 
 public function monthlyCarriersReport(?string $from = null, ?string $to = null): array
@@ -997,8 +1062,9 @@ public function mergeDialerStatsIntoFlatRows(array $rows, array $dialerLeaderboa
 public function teamsSummaryTable(array $mergedTeams): array
 {
     $lastSaleTimes = $this->teamLastSaleTimes();
+    $activeIds     = $this->activeClosersToday();
 
-    return array_values(array_filter(array_map(function ($team) use ($lastSaleTimes) {
+    return array_values(array_filter(array_map(function ($team) use ($lastSaleTimes, $activeIds) {
         if ($team['name'] === 'Unassigned') {
             return null;
         }
@@ -1006,18 +1072,31 @@ public function teamsSummaryTable(array $mergedTeams): array
         $target = \App\Models\SalesTeam::where('name', $team['name'])->value('target') ?? 0;
 
         $teamModel = \App\Models\SalesTeam::where('name', $team['name'])->first();
-        $totalClosers = $teamModel ? \App\Models\SalesCloser::where('sales_team_id', $teamModel->id)->where('active', true)->count() : count($team['closers']);
+        $totalClosers = max(count($team['closers']), 1);
+        $activeClosersCount = 0;
+        
+        if ($teamModel) {
+            $totalClosers = \App\Models\SalesCloser::where('sales_team_id', $teamModel->id)->where('active', true)->count();
+            $activeClosersCount = \App\Models\SalesCloser::where('sales_team_id', $teamModel->id)->whereIn('id', $activeIds)->count();
+        }
+
         if ($totalClosers === 0) {
             $totalClosers = max(count($team['closers']), 1);
         }
+        
+        // For Dashboard Team Summary SPD, you requested:
+        // "hr team ky present closers sy uski SPD nikly"
+        // Active closers derived from Vicidial / activeIds
+        $spdDivisor = $activeClosersCount > 0 ? $activeClosersCount : $totalClosers;
 
         $approved = $team['totals']['mtd'];
-        $spd = round($approved / $totalClosers, 2);
+        $spd = round($approved / $spdDivisor, 2);
 
         return [
-            'team'          => $team['name'],
-            'closers'       => $totalClosers,
-            'approved'      => $approved,
+            'team'           => $team['name'],
+            'closers'        => $totalClosers,
+            'active_closers' => $activeClosersCount,
+            'approved'       => $approved,
             'level'         => $team['totals']['level'],
             'gi'            => $team['totals']['gi'],
             'level_pct'     => $team['averages']['level_pct'],
@@ -1071,15 +1150,19 @@ public function teamsSummaryTotals(array $teamsSummary): array
     }
     $avgTalkSeconds = $totalCalls > 0 ? intdiv($weightedSeconds, $totalCalls) : 0;
 
-    $totalClosers = array_sum(array_column($teamsSummary, 'closers'));
+    $totalClosers       = array_sum(array_column($teamsSummary, 'closers'));
+    $totalActiveClosers = array_sum(array_column($teamsSummary, 'active_closers'));
+    
+    $spdDivisor = $totalActiveClosers > 0 ? $totalActiveClosers : ($totalClosers > 0 ? $totalClosers : 1);
 
     return [
-        'closers'       => $totalClosers,
-        'approved'      => $approved,
-        'level'         => $level,
-        'gi'            => array_sum(array_column($teamsSummary, 'gi')),
-        'level_pct'     => $approved > 0 ? round(($level / $approved) * 100) : 0,
-        'spd'           => $totalClosers > 0 ? round($approved / $totalClosers, 2) : 0,
+        'closers'        => $totalClosers,
+        'active_closers' => $totalActiveClosers,
+        'approved'       => $approved,
+        'level'          => $level,
+        'gi'             => array_sum(array_column($teamsSummary, 'gi')),
+        'level_pct'      => $approved > 0 ? round(($level / $approved) * 100) : 0,
+        'spd'            => round($approved / $spdDivisor, 2),
         'avg_pre'       => round(array_sum(array_column($teamsSummary, 'avg_pre')) / $count),
         'avg_talk_time' => $this->secondsToHms($avgTalkSeconds),
         'target'        => array_sum(array_column($teamsSummary, 'target')),

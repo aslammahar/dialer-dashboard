@@ -282,7 +282,7 @@
         <tr>
             <td>{{ $t['last_sale'] }}</td>
             <td>{{ $t['team'] }}</td>
-            <td style="text-align:center"><span class="dd-lb-team" style="background:rgba(52,245,197,.12);color:#34f5c5">{{ $t['closers'] }}</span></td>
+            <td style="text-align:center"><span class="dd-lb-team" style="background:rgba(52,245,197,.12);color:#34f5c5" title="Active / Total">{{ $t['active_closers'] ?? 0 }} / {{ $t['closers'] }}</span></td>
             <td>{{ $t['approved'] }}</td>
             <td>{{ $t['level'] }}</td>
             <td>{{ $t['gi'] }}</td>
@@ -302,7 +302,7 @@
     <tr>
         <td>Total / Avg</td>
         <td>-</td>
-        <td style="text-align:center">{{ $teamsSummaryTotals['closers'] }}</td>
+        <td style="text-align:center">{{ $teamsSummaryTotals['active_closers'] ?? 0 }} / {{ $teamsSummaryTotals['closers'] }}</td>
         <td>{{ $teamsSummaryTotals['approved'] }}</td>
         <td>{{ $teamsSummaryTotals['level'] }}</td>
         <td>{{ $teamsSummaryTotals['gi'] }}</td>
@@ -456,7 +456,7 @@
         </div>
     </div>
     <div class="dd-lb-scroll">
-        <table class="dd-lb-table">
+        <table class="dd-lb-table" id="ddMonthlyTable">
             <thead>
                 <tr>
                     <th></th>
@@ -476,9 +476,10 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($monthlyPerformance as $p)
-                    <tr class="r{{ $p['rank'] <= 3 ? $p['rank'] : '' }}">
-                        <td><span class="dd-rank-badge">{{ $p['rank'] }}</span></td>
+                @forelse($monthlyPerformance as $idx => $p)
+                    @php $rank = $idx + 1; @endphp
+                    <tr class="{{ $rank <= 3 ? 'r'.$rank : '' }}">
+                        <td><span class="dd-rank-badge">{{ $rank }}</span></td>
                         <td>
                             <div class="dd-lb-agent">
                                 <div class="dd-avatar">{{ strtoupper(substr($p['closer'], 0, 2)) }}</div>
@@ -633,11 +634,12 @@
         '</tr>';
     }
 
-    function renderTeamRow(t) {
-        return '<tr>' +
+    function renderTeamRow(t, rank) {
+        var rClass = rank <= 3 ? ' r' + rank : '';
+        return '<tr class="' + rClass + '">' +
             '<td>' + t.last_sale + '</td>' +
             '<td>' + t.team + '</td>' +
-            '<td style="text-align:center"><span class="dd-lb-team" style="background:rgba(52,245,197,.12);color:#34f5c5">' + t.closers + '</span></td>' +
+            '<td style="text-align:center"><span class="dd-lb-team" style="background:rgba(52,245,197,.12);color:#34f5c5" title="Active / Total">' + (t.active_closers || 0) + ' / ' + t.closers + '</span></td>' +
             '<td>' + t.approved + '</td>' +
             '<td>' + t.level + '</td>' +
             '<td>' + t.gi + '</td>' +
@@ -647,6 +649,37 @@
             '<td>' + t.avg_talk_time + '</td>' +
             '<td>' + t.target + '</td>' +
             '<td>' + t.left + '</td>' +
+        '</tr>';
+    }
+
+    function renderMonthlyRow(p, rank) {
+        var clientHtml = '<span style="color:var(--dd-text-muted)">—</span>';
+        if (p.client_breakdown && Object.keys(p.client_breakdown).length > 0) {
+            clientHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">';
+            for (var cName in p.client_breakdown) {
+                clientHtml += '<span style="background:rgba(52,245,197,.12);color:#34f5c5;border:1px solid rgba(52,245,197,.25);border-radius:4px;padding:1px 6px;font-size:10.5px;white-space:nowrap">' + cName + ': <b>' + p.client_breakdown[cName] + '</b></span>';
+            }
+            clientHtml += '</div>';
+        }
+
+        var rClass = rank <= 3 ? ' r' + rank : '';
+        var avatarLetters = (p.closer || '??').substring(0, 2).toUpperCase();
+
+        return '<tr class="' + rClass + '">' +
+            '<td><span class="dd-rank-badge">' + rank + '</span></td>' +
+            '<td><div class="dd-lb-agent"><div class="dd-avatar">' + avatarLetters + '</div><div class="dd-lb-name">' + p.closer + '</div></div></td>' +
+            '<td><span class="dd-lb-team">' + p.team + '</span></td>' +
+            '<td>' + p.working_days + '</td>' +
+            '<td>' + p.mtd + '</td>' +
+            '<td>' + p.spd + '</td>' +
+            '<td>' + p.level + '</td>' +
+            '<td>' + p.gi + '</td>' +
+            '<td>' + p.level_pct + '%</td>' +
+            '<td>' + p.avg_pre + '</td>' +
+            '<td>' + p.calls + '</td>' +
+            '<td style="color:#22c55e;font-weight:600">' + p.conversion + '</td>' +
+            '<td>' + p.avg_talk_time + '</td>' +
+            '<td>' + clientHtml + '</td>' +
         '</tr>';
     }
 
@@ -785,14 +818,14 @@
                     var tBody = teamsTable.querySelector('tbody');
                     tBody.innerHTML = data.teams_summary.length === 0
                         ? '<tr><td colspan="12" style="text-align:center;color:var(--dd-text-muted);padding:16px">No team data yet.</td></tr>'
-                        : data.teams_summary.map(renderTeamRow).join('');
+                        : data.teams_summary.map(function(t, idx){ return renderTeamRow(t, idx + 1); }).join('');
 
                     var tTf = teamsTable.querySelector('tfoot tr');
                     if (tTf && data.teams_summary.length > 0) {
                         var tt = data.teams_summary_totals;
                         tTf.innerHTML =
                             '<td>Total / Avg</td><td>-</td>' +
-                            '<td style="text-align:center">' + tt.closers + '</td>' +
+                            '<td style="text-align:center">' + (tt.active_closers || 0) + ' / ' + tt.closers + '</td>' +
                             '<td>' + tt.approved + '</td>' +
                             '<td>' + tt.level + '</td>' +
                             '<td>' + tt.gi + '</td>' +
@@ -806,6 +839,34 @@
 
                     checkTeamOvertake(data.teams_summary);
                 }
+
+                // Monthly Performance Ranking
+                var monthlyTable = document.getElementById('ddMonthlyTable');
+                if (monthlyTable && data.monthly_performance) {
+                    var mBody = monthlyTable.querySelector('tbody');
+                    mBody.innerHTML = data.monthly_performance.length === 0
+                        ? '<tr><td colspan="14" style="text-align:center;color:var(--dd-text-muted);padding:20px">No sales data yet this month.</td></tr>'
+                        : data.monthly_performance.map(function(p, idx){ return renderMonthlyRow(p, idx + 1); }).join('');
+
+                    var mTf = monthlyTable.querySelector('tfoot tr');
+                    if (mTf && data.monthly_performance_totals) {
+                        var mt = data.monthly_performance_totals;
+                        mTf.innerHTML =
+                            '<td colspan="3">Total / Avg</td>' +
+                            '<td>' + mt.working_days_avg + '</td>' +
+                            '<td>' + mt.mtd_total + ' <span style="color:var(--dd-text-muted);font-size:10.5px">(avg ' + mt.mtd_avg + ')</span></td>' +
+                            '<td>' + mt.spd_avg + '</td>' +
+                            '<td>' + mt.level_total + ' <span style="color:var(--dd-text-muted);font-size:10.5px">(avg ' + mt.level_avg + ')</span></td>' +
+                            '<td>' + mt.gi_total + ' <span style="color:var(--dd-text-muted);font-size:10.5px">(avg ' + mt.gi_avg + ')</span></td>' +
+                            '<td>' + mt.level_pct_avg + '%</td>' +
+                            '<td>' + mt.avg_pre_avg + '</td>' +
+                            '<td>' + mt.calls_total + ' <span style="color:var(--dd-text-muted);font-size:10.5px">(avg ' + mt.calls_avg + ')</span></td>' +
+                            '<td>' + mt.conversion_avg + '</td>' +
+                            '<td>' + mt.avg_talk_time_avg + '</td>' +
+                            '<td>-</td>';
+                    }
+                }
+                
                 // Celebration on new approved sale
                 if (!firstRun && data.latest_id && data.latest_id !== lastLatestId) {
                     window.ddCelebrateSale(data.latest_closer);

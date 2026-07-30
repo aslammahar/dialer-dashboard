@@ -49,11 +49,22 @@
             <a href="{{ route('sales-reports.team-wise', ['range' => 'daily']) }}" class="tw-apply" style="{{ $range == 'daily' ? '' : 'background:var(--tw-surface);color:var(--tw-text-sec);border:1px solid var(--tw-border)' }};text-decoration:none">Daily</a>
             <a href="{{ route('sales-reports.team-wise', ['range' => 'weekly']) }}" class="tw-apply" style="{{ $range == 'weekly' ? '' : 'background:var(--tw-surface);color:var(--tw-text-sec);border:1px solid var(--tw-border)' }};text-decoration:none">Weekly</a>
             <a href="{{ route('sales-reports.team-wise', ['range' => 'monthly']) }}" class="tw-apply" style="{{ $range == 'monthly' ? '' : 'background:var(--tw-surface);color:var(--tw-text-sec);border:1px solid var(--tw-border)' }};text-decoration:none">Monthly</a>
+            <a href="{{ route('sales-reports.team-wise', ['range' => 'custom']) }}" class="tw-apply" style="{{ $range == 'custom' ? '' : 'background:var(--tw-surface);color:var(--tw-text-sec);border:1px solid var(--tw-border)' }};text-decoration:none">Custom</a>
 
             @if($range == 'monthly')
             <form class="tw-month-form" method="GET" action="{{ route('sales-reports.team-wise') }}">
                 <input type="hidden" name="range" value="monthly">
                 <input type="month" name="month" class="tw-input" value="{{ \Carbon\Carbon::parse($month)->format('Y-m') }}">
+                <button type="submit" class="tw-apply">View</button>
+            </form>
+            @endif
+
+            @if($range == 'custom')
+            <form class="tw-month-form" method="GET" action="{{ route('sales-reports.team-wise') }}">
+                <input type="hidden" name="range" value="custom">
+                <input type="date" name="start_date" class="tw-input" value="{{ $start_date ?? '' }}">
+                <span style="color:var(--tw-text-sec);font-size:12px">to</span>
+                <input type="date" name="end_date" class="tw-input" value="{{ $end_date ?? '' }}">
                 <button type="submit" class="tw-apply">View</button>
             </form>
             @endif

@@ -110,7 +110,7 @@
     .dd-legend span.sw{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
 
     .dd-lb-scroll{overflow-x:auto}
-    .dd-lb-table{width:100%;border-collapse:collapse;min-width:820px}
+    .dd-lb-table{width:100%;border-collapse:collapse;min-width:820px;}
     .dd-lb-table th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--dd-text-muted);
     text-align:right;padding:0 6px 8px;font-weight:600;white-space:nowrap}
     .dd-lb-table th:first-child{text-align:left}
@@ -118,6 +118,13 @@
     .dd-lb-table th.dd-th-group-monthly{text-align:center;color:var(--dd-text-sec);border-bottom:1px solid var(--dd-border)}
     .dd-lb-table td{padding:7px 6px;font-size:12.5px;border-bottom:1px solid var(--dd-border);text-align:right;
     font-family:var(--dd-font-mono);white-space:nowrap}
+    
+    /* Top 3 row Green colors for Monthly Performance Table only */
+    #ddMonthlyTable tbody tr.r1 td, #ddMonthlyTable tbody tr.r2 td, #ddMonthlyTable tbody tr.r3 td,
+    #ddMonthlyTable tbody tr.r1 .dd-lb-team, #ddMonthlyTable tbody tr.r2 .dd-lb-team, #ddMonthlyTable tbody tr.r3 .dd-lb-team {
+        color: #22c55e !important;
+    }
+
     .dd-lb-table tbody td:first-child{text-align:left;font-family:var(--dd-font-body)}
     .dd-lb-table tbody td.dd-font-body{font-family:var(--dd-font-body)}
     .dd-lb-table tbody tr{transition:background .2s ease}

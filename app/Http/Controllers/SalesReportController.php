@@ -2799,8 +2799,10 @@ public function exportMyReport(Request $request)
 }
 public function teamsWise(Request $request)
 {
-    $range = $request->get('range', 'monthly'); // daily, weekly, monthly
+    $range = $request->get('range', 'monthly'); // daily, weekly, monthly, custom
     $month = $request->get('month', now('America/New_York')->toDateString());
+    $startDate = $request->get('start_date', now('America/New_York')->toDateString());
+    $endDate   = $request->get('end_date', now('America/New_York')->toDateString());
 
     switch ($range) {
         case 'daily':
@@ -2810,6 +2812,10 @@ public function teamsWise(Request $request)
         case 'weekly':
             $from = now('America/New_York')->startOfWeek()->toDateString();
             $to   = now('America/New_York')->toDateString();
+            break;
+        case 'custom':
+            $from = $startDate;
+            $to   = $endDate;
             break;
         default:
             $from = \Carbon\Carbon::parse($month)->startOfMonth()->toDateString();
@@ -2832,6 +2838,8 @@ public function teamsWise(Request $request)
     return view('sales-reports.team-wise', [
         'month'   => $month,
         'range'   => $range,
+        'start_date' => $startDate,
+        'end_date'   => $endDate,
         'teams'   => $teams,
         'clients' => $board['clients'],
         'canEdit' => $this->canEdit(),

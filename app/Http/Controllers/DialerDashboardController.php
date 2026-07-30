@@ -155,6 +155,7 @@ public function liveBoard(Request $request)
 
     $dailyBoard       = $salesService->dailyBoard($todayNY);
     $dailyBoard       = $salesService->mergeDialerStats($dailyBoard, $leaderboard);
+    $dailyBoard       = $salesService->sortDailyBoardByScore($dailyBoard); // Smart ranking: approved + level% + conversion
     $dailyBoardTotals = $salesService->dailyBoardTotals($dailyBoard);
     $activeStats      = $salesService->activeClosersDialerStats($leaderboard);
     $closerCounts     = $salesService->closerCounts();
