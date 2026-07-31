@@ -1099,7 +1099,12 @@ window.ddCelebrateSale = function (closerName) {
         setTimeout(fireworkBurst, 900),
         setTimeout(fireworkBurst, 1900),
         setTimeout(fireworkBurst, 2900),
-        setTimeout(fireworkBurst, 3900)
+        setTimeout(fireworkBurst, 3900),
+        setTimeout(fireworkBurst, 5500),
+        setTimeout(fireworkBurst, 7500),
+        setTimeout(fireworkBurst, 9500),
+        setTimeout(fireworkBurst, 11500),
+        setTimeout(fireworkBurst, 13500)
     ];
 
     clearTimeout(window._ddCelebrateTimeout);
@@ -1110,7 +1115,7 @@ window.ddCelebrateSale = function (closerName) {
         bubbleHolder.innerHTML = '';
         dancerHolder.innerHTML = '';
         fireworkHolder.innerHTML = '';
-    }, 5000);
+    }, 15000);
 };
 </script>
 

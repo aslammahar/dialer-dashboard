@@ -465,6 +465,14 @@ public function teamWiseClosersBoard(?string $from = null, ?string $to = null): 
         ->unique()
         ->toArray();
 
+    // Attendance-based working days per closer (same as monthlyPerformanceRanking)
+    $workingDaysByCloser = \App\Models\ClosersAttendance::where('status', 'present')
+        ->whereBetween('attendance_date', [$from, $to])
+        ->get()
+        ->groupBy('sales_closer_id')
+        ->map(fn ($rows) => $rows->count())
+        ->all();
+
     $entries = DailySalesEntry::with(['closer.team', 'team', 'client'])
         ->whereBetween('entry_date', [$from, $to])
         ->get();
@@ -472,15 +480,21 @@ public function teamWiseClosersBoard(?string $from = null, ?string $to = null): 
     $clientNames = \App\Models\SalesClient::orderBy('name')->pluck('name')->all();
 
     $teams = $entries
+        ->filter(fn ($e) => $e->closer !== null)
         ->groupBy(fn ($e) => $e->closer->team->name ?? 'Unassigned')
-        ->map(function ($teamEntries, $teamName) use ($clientNames, $presentCloserIds) {
+        ->map(function ($teamEntries, $teamName) use ($clientNames, $presentCloserIds, $workingDaysByCloser) {
             $closers = $teamEntries
                 ->groupBy('sales_closer_id')
-                ->map(function ($rows) use ($clientNames) {
+                ->map(function ($rows) use ($clientNames, $workingDaysByCloser) {
                     $closer = $rows->first()->closer;
+                    
+                    if (! $closer) {
+                        return null;
+                    }
+
                     $approved = $rows->where('status', 'approved');
                     $levelCount = $approved->where('sale_type', 'level')->count();
-                    $workingDays = $rows->pluck('entry_date')->map(fn ($d) => $d->toDateString())->unique()->count();
+                    $workingDays = $workingDaysByCloser[$closer->id] ?? 0;
                     $mtd = $approved->count();
 
                     $clientCounts = [];
@@ -502,6 +516,7 @@ public function teamWiseClosersBoard(?string $from = null, ?string $to = null): 
                         'avg_pre'      => $approved->avg('avg_pre') ? round($approved->avg('avg_pre'), 2) : 0,
                     ];
                 })
+                ->filter()
                 ->sortByDesc('mtd')
                 ->values()
                 ->all();
@@ -535,11 +550,13 @@ public function teamWiseClosersBoard(?string $from = null, ?string $to = null): 
                 $totalTeamClosers = max($count, 1);
             }
 
+            $avgWorkingDays = $count > 0 ? round($sum('working_days') / $count, 1) : 0;
+
             $averages = [
                 'total_closers'=> $totalTeamClosers,
-                'working_days' => $count > 0 ? round($sum('working_days') / $count, 1) : 0,
+                'working_days' => $avgWorkingDays,
                 'mtd'          => $count > 0 ? round($sum('mtd') / $count, 1) : 0,
-                'spd'          => $totalTeamClosers > 0 ? round($totals['mtd'] / $totalTeamClosers, 2) : 0,
+                'spd'          => $avgWorkingDays > 0 ? round($totals['mtd'] / $avgWorkingDays, 2) : 0,
                 'level'        => $count > 0 ? round($sum('level') / $count, 1) : 0,
                 'gi'           => $count > 0 ? round($sum('gi') / $count, 1) : 0,
                 'level_pct'    => $totals['mtd'] > 0 ? round(($totals['level'] / $totals['mtd']) * 100, 2) : 0,
@@ -913,7 +930,7 @@ public function mergeDialerStatsIntoTeams(array $teams, array $dialerLeaderboard
 
             $closer['avatar_calls']  = $calls;
             $closer['avg_talk_time'] = $match['avg_talk_time'] ?? '-';
-            $closer['conversion']    = $calls > 0 ? round(($closer['mtd'] / $calls) * 100, 1) : 0;
+            $closer['conversion']    = $closer['mtd'] > 0 ? round($calls / $closer['mtd'], 2) : 0;
 
             $totalCalls += $calls;
             if ($match && $match['avg_talk_time'] !== '-') {
@@ -926,7 +943,7 @@ public function mergeDialerStatsIntoTeams(array $teams, array $dialerLeaderboard
 
         $team['totals']['calls']         = $totalCalls;
         $team['totals']['avg_talk_time'] = $this->secondsToHms($avgTalkSeconds);
-        $team['totals']['conversion']    = $totalCalls > 0 ? round(($team['totals']['mtd'] / $totalCalls) * 100, 1) : 0;
+        $team['totals']['conversion']    = $team['totals']['mtd'] > 0 ? round($totalCalls / $team['totals']['mtd'], 2) : 0;
     }
     unset($team);
 
