@@ -361,7 +361,8 @@
     .dd-top-closer-info{flex:1;min-width:0}
     .dd-top-closer-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--dd-gold);font-weight:700;margin-bottom:4px}
     .dd-top-closer-name{font-family:var(--dd-font-display);font-size:22px;font-weight:700;color:var(--dd-text);
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    text-align:center}
+    .dd-top-closer-divider{width:1px;align-self:stretch;background:var(--dd-border-strong);margin:0 4px}
     .dd-top-closer-team{font-size:12px;color:var(--dd-text-sec);margin-top:2px}
     .dd-top-closer-stats{display:flex;gap:16px}
     .dd-top-closer-stat{display:flex;flex-direction:column;align-items:center;gap:3px;

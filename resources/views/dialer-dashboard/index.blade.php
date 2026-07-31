@@ -258,9 +258,15 @@
 @endphp
 
 <div class="dd-top-closer-card" id="ddTopCloserCard" style="{{ !$topCloser ? 'display:none' : '' }}">
-    <div class="dd-top-closer-trophy">🏆</div>
-    <div class="dd-top-closer-info">
-        <div class="dd-top-closer-label">Today's Top Closer</div>
+    <div class="dd-top-closer-trophy">🥇</div>
+    <div class="dd-top-closer-info" style="text-align:center">
+        <div class="dd-top-closer-label" style="color:#38bdf8">Today's Top Team</div>
+        <div class="dd-top-closer-name" id="ddTopTeamName" style="font-size:20px">{{ $teamsSummary[0]['team'] ?? '-' }}</div>
+        <div class="dd-top-closer-team" id="ddTopTeamApproved">{{ $teamsSummary[0]['approved'] ?? 0 }} approved sales</div>
+    </div>
+    <div class="dd-top-closer-divider"></div>
+    <div class="dd-top-closer-info" style="text-align:center">
+        <div class="dd-top-closer-label">🏆 Today's Top Closer</div>
         <div class="dd-top-closer-name" id="ddTopCloserName">{{ $topCloser['closer'] ?? '-' }}</div>
         <div class="dd-top-closer-team" id="ddTopCloserTeam">{{ $topCloser['team'] ?? '' }}</div>
     </div>
@@ -272,10 +278,6 @@
         <div class="dd-top-closer-stat">
             <span class="dd-top-closer-stat-val" id="ddTopCloserLevel">{{ $topCloser['level'] ?? 0 }}</span>
             <span class="dd-top-closer-stat-lbl">Level</span>
-        </div>
-        <div class="dd-top-closer-stat">
-            <span class="dd-top-closer-stat-val" id="ddTopCloserGI">{{ $topCloser['gi'] ?? 0 }}</span>
-            <span class="dd-top-closer-stat-lbl">GI</span>
         </div>
         <div class="dd-top-closer-stat">
             <span class="dd-top-closer-stat-val" id="ddTopCloserLevelPct">{{ $topCloser['level_pct'] ?? 0 }}%</span>
@@ -1080,6 +1082,14 @@
                             '<td>' + mt.avg_talk_time_avg + '</td>' +
                             '<td>-</td>';
                     }
+
+                    // Today's Top Team (alongside top closer)
+                    var topTeamNameEl = document.getElementById('ddTopTeamName');
+                    var topTeamApprovedEl = document.getElementById('ddTopTeamApproved');
+                    if (topTeamNameEl && data.teams_summary && data.teams_summary.length > 0) {
+                        topTeamNameEl.textContent = data.teams_summary[0].team;
+                        topTeamApprovedEl.textContent = data.teams_summary[0].approved + ' approved sales';
+                    }
                 }
                 
                 // Celebration on new approved sale
@@ -1095,6 +1105,7 @@
             })
             .catch(function(err){ console.error('Live board poll failed', err); });
     }
+    
 
     poll();
     setInterval(poll, 5000); // ab 5 second

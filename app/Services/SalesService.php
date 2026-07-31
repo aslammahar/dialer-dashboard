@@ -231,7 +231,14 @@ public function monthlyPerformanceRanking(?string $month = null, array $dialerLe
     }
     unset($row);
 
-    usort($rows, fn ($a, $b) => $b['score'] <=> $a['score']);
+  usort($rows, function ($a, $b) {
+    // MTD (sales count) hamesha pehli priority — jiski zyada sales, wo upar
+    if ($b['mtd'] !== $a['mtd']) {
+        return $b['mtd'] <=> $a['mtd'];
+    }
+    // Barabar MTD walon mein purana blended score tie-breaker ka kaam karega
+    return $b['score'] <=> $a['score'];
+});
 
     foreach ($rows as $i => &$row) {
         $row['rank'] = $i + 1;
