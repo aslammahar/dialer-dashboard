@@ -130,13 +130,6 @@
         </div>
     </div>
 
-    <div class="dd-footnote">
-        <span class="dd-dot-static"></span>
-        Leaderboard pulled live from
-        <a href="https://jsonsd4.maxtelco.com/vicidial/AST_CLOSERstats.php" target="_blank" rel="noopener" style="color:var(--dd-accent)">
-            VICIdial CLOSERstats
-        </a>.
-    </div>
 </div>
 @endsection
 
