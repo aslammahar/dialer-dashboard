@@ -15,6 +15,9 @@
         --dd-gold:#ffb020;
         --dd-silver:#c9d2da;
         --dd-bronze:#d8854a;
+        --dd-rank-4:#38bdf8;
+        --dd-rank-5:#a78bfa;
+        --dd-rank-6:#fb7185;
         --dd-danger:#ff5a5a;
         --dd-font-display:'Space Grotesk',sans-serif;
         --dd-font-body:'Inter',sans-serif;
@@ -124,6 +127,18 @@
     #ddMonthlyTable tbody tr.r1 .dd-lb-team, #ddMonthlyTable tbody tr.r2 .dd-lb-team, #ddMonthlyTable tbody tr.r3 .dd-lb-team {
         color: #22c55e !important;
     }
+    #ddMonthlyTable tbody tr.r4 td,
+    #ddMonthlyTable tbody tr.r4 .dd-lb-team {
+        color: var(--dd-rank-4) !important;
+    }
+    #ddMonthlyTable tbody tr.r5 td,
+    #ddMonthlyTable tbody tr.r5 .dd-lb-team {
+        color: var(--dd-rank-5) !important;
+    }
+    #ddMonthlyTable tbody tr.r6 td,
+    #ddMonthlyTable tbody tr.r6 .dd-lb-team {
+        color: var(--dd-rank-6) !important;
+    }
 
     .dd-lb-table tbody td:first-child{text-align:left;font-family:var(--dd-font-body)}
     .dd-lb-table tbody td.dd-font-body{font-family:var(--dd-font-body)}
@@ -140,13 +155,21 @@
     .dd-lb-table tr.r1 .dd-avatar{border-color:var(--dd-gold);color:var(--dd-gold)}
     .dd-lb-table tr.r2 .dd-avatar{border-color:var(--dd-silver);color:var(--dd-silver)}
     .dd-lb-table tr.r3 .dd-avatar{border-color:var(--dd-bronze);color:var(--dd-bronze)}
+    #ddMonthlyTable tr.r4 .dd-avatar{border-color:var(--dd-rank-4);color:var(--dd-rank-4);background:rgba(56,189,248,.08)}
+    #ddMonthlyTable tr.r5 .dd-avatar{border-color:var(--dd-rank-5);color:var(--dd-rank-5);background:rgba(167,139,250,.08)}
+    #ddMonthlyTable tr.r6 .dd-avatar{border-color:var(--dd-rank-6);color:var(--dd-rank-6);background:rgba(251,113,133,.08)}
     .dd-rank-badge{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;
         font-family:var(--dd-font-mono);font-size:11px;font-weight:600;background:var(--dd-surface-alt);color:var(--dd-text-sec)}
     tr.r1 .dd-rank-badge{background:rgba(255,176,32,.16);color:var(--dd-gold);animation:dd-trophy-pulse 2.2s ease-in-out infinite}
     tr.r2 .dd-rank-badge{background:rgba(201,210,218,.14);color:var(--dd-silver)}
     tr.r3 .dd-rank-badge{background:rgba(216,133,74,.16);color:var(--dd-bronze)}
+    #ddMonthlyTable tr.r4 .dd-rank-badge{background:rgba(56,189,248,.14);color:var(--dd-rank-4);border:1px solid rgba(56,189,248,.28)}
+    #ddMonthlyTable tr.r5 .dd-rank-badge{background:rgba(167,139,250,.14);color:var(--dd-rank-5);border:1px solid rgba(167,139,250,.28)}
+    #ddMonthlyTable tr.r6 .dd-rank-badge{background:rgba(251,113,133,.14);color:var(--dd-rank-6);border:1px solid rgba(251,113,133,.28)}
     .dd-lb-name{font-size:13px;font-weight:500}
     .dd-lb-team{font-size:11px;color:var(--dd-text-muted)}
+    .dd-total-closers{display:inline-flex;align-items:center;justify-content:center;border-radius:6px;padding:2px 8px;
+        background:rgba(52,245,197,.12);border:1px solid rgba(52,245,197,.24);color:var(--dd-accent);font-family:var(--dd-font-mono);font-weight:600}
     .dd-pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11.5px;font-weight:600}
     .dd-pill-hi{background:rgba(52,245,197,.14);color:var(--dd-accent)}
     .dd-pill-lo{background:rgba(255,90,90,.14);color:var(--dd-danger)}

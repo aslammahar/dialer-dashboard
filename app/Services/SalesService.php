@@ -59,6 +59,7 @@ public function dailyBoardTotals(array $board): array
     $totalApproved = array_sum(array_column($board, 'approved'));
     $totalLevel    = array_sum(array_column($board, 'level'));
     $totalCalls    = array_sum(array_column($board, 'calls'));
+    $totalClosers  = count(array_filter($board, fn ($row) => (($row['approved'] ?? 0) + ($row['pending'] ?? 0)) > 0));
 
     // Weighted average talk time — weighted by each closer's call count,
     // not a plain average of averages (which skews toward low-call agents).
@@ -75,6 +76,7 @@ public function dailyBoardTotals(array $board): array
 
     return [
         'approved'      => $totalApproved,
+        'closers'       => $totalClosers,
         'pending'       => array_sum(array_column($board, 'pending')),
         'level'         => $totalLevel,
         'gi'            => array_sum(array_column($board, 'gi')),

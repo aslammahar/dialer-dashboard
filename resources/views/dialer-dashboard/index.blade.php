@@ -266,7 +266,7 @@
         <div class="dd-panel-head">
             <div>
                 <div class="dd-panel-title">Today's Sales Board</div>
-                <div class="dd-panel-sub">{{ now('America/New_York')->format('d M Y') }} (New York) — Approved vs Pending per closer</div>
+                <div class="dd-panel-sub">{{ now('America/New_York')->format('d M Y') }} (New York) - Approved vs Pending per closer - <span id="ddTodayClosersCount">{{ $dailyBoardTotals['closers'] ?? 0 }}</span> closers with sales today</div>
             </div>
             {{-- <a href="{{ route('daily-sales.create') }}" class="dd-apply" style="text-decoration:none"> Update Sale</a> --}}
         </div>
@@ -306,7 +306,9 @@
         </tbody>
        <tfoot>
     <tr>
-        <td colspan="3">Total</td>
+        <td>Total</td>
+        <td>-</td>
+        <td><span class="dd-total-closers">{{ $dailyBoardTotals['closers'] ?? 0 }} Closers</span></td>
         <td>{{ $dailyBoardTotals['approved'] }}</td>
         <td>{{ $dailyBoardTotals['level'] }}</td>
         <td>{{ $dailyBoardTotals['gi'] }}</td>
@@ -538,7 +540,7 @@
             <tbody>
                 @forelse($monthlyPerformance as $idx => $p)
                     @php $rank = $idx + 1; @endphp
-                    <tr class="{{ $rank <= 3 ? 'r'.$rank : '' }}">
+                    <tr class="{{ $rank <= 6 ? 'r'.$rank : '' }}">
                         <td><span class="dd-rank-badge">{{ $rank }}</span></td>
                         <td>
                             <div class="dd-lb-agent">
@@ -723,7 +725,7 @@
             clientHtml += '</div>';
         }
 
-        var rClass = rank <= 3 ? ' r' + rank : '';
+        var rClass = rank <= 6 ? ' r' + rank : '';
         var avatarLetters = (p.closer || '??').substring(0, 2).toUpperCase();
 
         return '<tr class="' + rClass + '">' +
@@ -795,7 +797,9 @@
                     var tf = table.querySelector('tfoot tr');
                     if (tf) {
                         tf.innerHTML =
-                            '<td colspan="3">Total</td>' +
+                            '<td>Total</td>' +
+                            '<td>-</td>' +
+                            '<td><span class="dd-total-closers">' + (data.totals.closers || 0) + ' Closers</span></td>' +
                             '<td>' + data.totals.approved + '</td>' +
                             '<td>' + data.totals.level + '</td>' +
                             '<td>' + data.totals.gi + '</td>' +
@@ -804,6 +808,9 @@
                             '<td>' + data.totals.calls + '</td>' +
                             '<td>' + data.totals.avg_talk_time + '</td>';
                     }
+
+                    var todayClosersEl = document.getElementById('ddTodayClosersCount');
+                    if (todayClosersEl) todayClosersEl.textContent = data.totals.closers || 0;
                 }
 
                 // Today's Top Closer
