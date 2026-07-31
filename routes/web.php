@@ -2924,6 +2924,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dialer-dashboard', [DialerDashboardController::class, 'index'])
         ->name('dialer-dashboard');
         Route::get('/dialer-dashboard/live-board', [DialerDashboardController::class, 'liveBoard'])->name('dialer-dashboard.live-board');
+        Route::post('/dialer-dashboard/broadcast', [DialerDashboardController::class, 'broadcastAnnouncement'])->name('dialer-dashboard.broadcast');
  
     // Manual "update now" trigger — controller itself checks the editor
     // email and aborts with 403 for anyone else, so this route can stay

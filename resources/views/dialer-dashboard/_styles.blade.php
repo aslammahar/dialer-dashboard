@@ -345,4 +345,21 @@
         background:rgba(255,255,255,.04);border:1px solid var(--dd-border);border-radius:10px;padding:10px 16px;min-width:68px}
     .dd-top-closer-stat-val{font-family:var(--dd-font-mono);font-size:20px;font-weight:600;color:var(--dd-accent)}
     .dd-top-closer-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--dd-text-muted)}
+    
+    /* Announcement Broadcast Celebration Styles */
+    #ddAnnouncementCelebration{position:fixed;inset:0;z-index:99999;pointer-events:none;display:none;overflow:hidden;
+        background:radial-gradient(circle at 50% 65%, rgba(255,176,32,.08), rgba(9,13,18,0) 60%);
+        opacity:0;transition:opacity .5s ease}
+    #ddAnnouncementCelebration.show{display:block;opacity:1}
+    .dd-msg-banner{position:absolute;top:45%;left:50%;transform:translate(-50%,-50%) scale(.85);
+        opacity:0;text-align:center;animation:dd-banner-pop .6s cubic-bezier(.22,1,.36,1) forwards,
+        dd-banner-out .6s ease forwards 59s}
+    .dd-msg-pill{display:inline-flex;flex-direction:column;align-items:center;gap:6px;
+        background:linear-gradient(180deg,rgba(17,22,29,.92),rgba(9,13,18,.96));
+        backdrop-filter:blur(16px);border:2px solid rgba(255,176,32,.5);
+        border-radius:26px;padding:32px 56px;box-shadow:0 24px 60px rgba(0,0,0,.75),0 0 45px rgba(255,176,32,.3);min-width:440px}
+    .dd-msg-kicker{font-size:14px;text-transform:uppercase;letter-spacing:.22em;color:var(--dd-gold);font-weight:700;margin-bottom:4px}
+    .dd-msg-text{font-family:var(--dd-font-display);font-weight:700;font-size:42px;letter-spacing:.2px;
+        color:var(--dd-text);line-height:1.3;margin:10px 0;max-width:800px;
+        text-shadow:0 0 20px rgba(255,176,32,.4)}
 </style>

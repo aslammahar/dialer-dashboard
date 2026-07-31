@@ -28,6 +28,22 @@
         </div>
     </div>
 
+    <div id="ddAnnouncementCelebration">
+    <div class="dd-lightbeams" id="ddAnnLights">
+        <div class="dd-beam dd-beam-1"></div>
+        <div class="dd-beam dd-beam-2"></div>
+        <div class="dd-beam dd-beam-3"></div>
+        <div class="dd-beam dd-beam-4"></div>
+    </div>
+    <div class="dd-fireworks" id="ddAnnFireworks"></div>
+    <div class="dd-msg-banner" id="ddMsgBanner">
+        <div class="dd-msg-pill">
+            <div class="dd-msg-kicker">📢 Announcement</div>
+            <div class="dd-msg-text" id="ddMsgText">—</div>
+        </div>
+    </div>
+</div>
+
 
     <div class="dd-topbar">
     <div class="dd-brand">
@@ -76,6 +92,10 @@
 <a href="{{ route('attendance-closer.index') }}" class="dd-readonly-badge" style="text-decoration:none">
     <i class="ti ti-calendar-check"></i> Mark Attendance
 </a>
+<div style="display:flex;align-items:center;gap:6px">
+    <input type="text" id="ddAnnouncementInput" class="dd-input" placeholder="Type announcement..." style="min-width:180px">
+    <button type="button" id="ddAnnouncementBtn" class="dd-apply" style="padding:9px 14px">📢 Announcement</button>
+</div>
 @endif
         <div class="dd-sync">
             <span class="dd-dot"></span>
@@ -629,6 +649,7 @@
 <script>
 (function(){
     var lastLatestId = null;
+    var lastAnnouncement = null;
     var pollUrl = @json(route('dialer-dashboard.live-board'));
     var firstRun = true;
 
@@ -937,6 +958,10 @@
                     window.ddCelebrateSale(data.latest_closer);
                 }
                 lastLatestId = data.latest_id;
+                if (data.announcement && data.announcement !== lastAnnouncement) {
+                    window.ddCelebrateAnnouncement(data.announcement);
+                }
+                lastAnnouncement = data.announcement || null;
                 firstRun = false;
             })
             .catch(function(err){ console.error('Live board poll failed', err); });
@@ -944,6 +969,95 @@
 
     poll();
     setInterval(poll, 5000); // ab 5 second
+})();
+</script>
+<script>
+window.ddCelebrateAnnouncement = function (message) {
+    var overlay = document.getElementById('ddAnnouncementCelebration');
+    var fireworkHolder = document.getElementById('ddAnnFireworks');
+    var banner = document.getElementById('ddMsgBanner');
+    var textEl = document.getElementById('ddMsgText');
+    if (!overlay || !banner || !textEl) return;
+
+    textEl.textContent = message;
+
+    banner.style.animation = 'none';
+    void banner.offsetWidth;
+    banner.style.animation = '';
+
+    overlay.classList.add('show');
+
+    fireworkHolder.innerHTML = '';
+    var fwColors = ['#ffb020', '#34f5c5', '#ffffff', '#f3f6f7'];
+
+    function fireworkBurst() {
+        var originX = 15 + Math.random() * 70;
+        var originY = 15 + Math.random() * 45;
+        var flash = document.createElement('span');
+        flash.className = 'dd-fw-flash';
+        flash.style.left = originX + '%';
+        flash.style.top = originY + '%';
+        fireworkHolder.appendChild(flash);
+        setTimeout(function () { flash.remove(); }, 550);
+
+        for (var p = 0; p < 18; p++) {
+            var angle = (Math.PI * 2 * p) / 18 + Math.random() * 0.2;
+            var dist = 60 + Math.random() * 70;
+            var particle = document.createElement('span');
+            particle.className = 'dd-fw-particle';
+            particle.style.left = originX + '%';
+            particle.style.top = originY + '%';
+            particle.style.background = fwColors[p % fwColors.length];
+            particle.style.setProperty('--dd-fw-x', (Math.cos(angle) * dist) + 'px');
+            particle.style.setProperty('--dd-fw-y', (Math.sin(angle) * dist) + 'px');
+            fireworkHolder.appendChild(particle);
+            (function (el) { setTimeout(function () { el.remove(); }, 1150); })(particle);
+        }
+    }
+
+    fireworkBurst();
+    var fwTimers = [];
+    for (var i = 1; i <= 12; i++) {
+        fwTimers.push(setTimeout(fireworkBurst, i * 4500));
+    }
+
+    clearTimeout(window._ddAnnTimeout);
+    (window._ddAnnFwTimers || []).forEach(clearTimeout);
+    window._ddAnnFwTimers = fwTimers;
+    window._ddAnnTimeout = setTimeout(function () {
+        overlay.classList.remove('show');
+        fireworkHolder.innerHTML = '';
+    }, 60000); // 1 minute
+};
+
+(function(){
+    var btn = document.getElementById('ddAnnouncementBtn');
+    var input = document.getElementById('ddAnnouncementInput');
+    if (!btn || !input) return;
+
+    btn.addEventListener('click', function(){
+        var msg = input.value.trim();
+        if (!msg) return;
+
+        fetch(@json(route('dialer-dashboard.broadcast')), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': @json(csrf_token()),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ message: msg })
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(){
+            input.value = '';
+        })
+        .catch(function(err){ console.error('Broadcast failed', err); });
+    });
+
+    input.addEventListener('keypress', function(e){
+        if (e.key === 'Enter') btn.click();
+    });
 })();
 </script>
 <script>

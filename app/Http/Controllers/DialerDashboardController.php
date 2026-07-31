@@ -190,7 +190,28 @@ public function liveBoard(Request $request)
         'monthly_performance_totals' => $monthlyPerformanceTotals,
         'latest_id'                  => $latestApproved->id ?? null,
         'latest_closer'              => $latestApproved->closer->name ?? null,
+        'announcement'               => \Illuminate\Support\Facades\Cache::get('dashboard_announcement'),
     ]);
+}
+
+public function broadcastAnnouncement(Request $request)
+{
+    abort_unless(
+        auth()->check() && in_array(auth()->user()->email, $this->editorEmails),
+        403,
+        'Only authorized users can broadcast announcements.'
+    );
+
+    $message = $request->input('message');
+    
+    if ($message) {
+        // Save the announcement to cache for 1 minute (60 seconds)
+        // Note: Cache::put in newer Laravel uses seconds, older uses minutes. Assuming minutes?
+        // Wait, Laravel 5.8+ uses seconds for TTL. Let's use now()->addMinute() for safety across versions.
+        \Illuminate\Support\Facades\Cache::put('dashboard_announcement', $message, now()->addMinute());
+    }
+
+    return response()->json(['success' => true]);
 }
 
 public function publicIndex(Request $request, string $token)
