@@ -385,4 +385,48 @@
     .dd-msg-text{font-family:var(--dd-font-display);font-weight:700;font-size:42px;letter-spacing:.2px;
         color:var(--dd-text);line-height:1.3;margin:10px 0;max-width:800px;
         text-shadow:0 0 20px rgba(255,176,32,.4)}
+
+    /* Team Overtake Celebration */
+    #ddTeamOvertakeCelebration{position:fixed;inset:0;z-index:99999;pointer-events:none;display:none;overflow:hidden;
+        background:radial-gradient(circle at 50% 55%, rgba(56,189,248,.12), rgba(9,13,18,.20) 42%, rgba(9,13,18,0) 68%);
+        opacity:0;transition:opacity .45s ease}
+    #ddTeamOvertakeCelebration.show{display:block;opacity:1}
+    .dd-overtake-streaks{position:absolute;inset:0;overflow:hidden}
+    .dd-overtake-line{position:absolute;height:3px;border-radius:999px;opacity:0;
+        background:linear-gradient(90deg,rgba(255,255,255,0),var(--dd-rank-4),var(--dd-accent),rgba(255,255,255,0));
+        filter:drop-shadow(0 0 10px rgba(56,189,248,.55));
+        animation:dd-overtake-line 1.15s cubic-bezier(.2,.72,.26,1) forwards}
+    @keyframes dd-overtake-line{
+        0%{opacity:0;transform:translateX(-18vw) skewX(-16deg) scaleX(.45)}
+        15%{opacity:.9}
+        100%{opacity:0;transform:translateX(118vw) skewX(-16deg) scaleX(1)}
+    }
+    .dd-overtake-banner{position:absolute;top:46%;left:50%;transform:translate(-50%,-46%) scale(.86);
+        opacity:0;text-align:center;animation:dd-overtake-pop .55s cubic-bezier(.22,1,.36,1) forwards,
+        dd-overtake-out .5s ease forwards 11.4s}
+    @keyframes dd-overtake-pop{
+        0%{opacity:0;transform:translate(-50%,-38%) scale(.86)}
+        100%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    }
+    @keyframes dd-overtake-out{to{opacity:0;transform:translate(-50%,-56%) scale(.96)}}
+    .dd-overtake-pill{display:inline-flex;flex-direction:column;align-items:center;gap:10px;
+        min-width:520px;max-width:min(860px,92vw);padding:32px 54px;border-radius:24px;
+        background:linear-gradient(180deg,rgba(17,22,29,.94),rgba(9,13,18,.98));
+        border:2px solid rgba(56,189,248,.42);box-shadow:0 26px 70px rgba(0,0,0,.78),0 0 46px rgba(56,189,248,.26);
+        backdrop-filter:blur(16px)}
+    .dd-overtake-kicker{font-size:13px;text-transform:uppercase;letter-spacing:.22em;color:var(--dd-rank-4);
+        font-weight:700}
+    .dd-overtake-match{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;
+        font-family:var(--dd-font-display);font-size:36px;font-weight:700;line-height:1.15;color:var(--dd-text)}
+    .dd-overtake-match span:first-child{color:var(--dd-accent);text-shadow:0 0 22px rgba(52,245,197,.35)}
+    .dd-overtake-match span:last-child{color:var(--dd-gold);text-shadow:0 0 22px rgba(255,176,32,.30)}
+    .dd-overtake-vs{font-family:var(--dd-font-body)!important;font-size:13px!important;letter-spacing:.12em;
+        text-transform:uppercase;color:var(--dd-text-sec)!important;border:1px solid var(--dd-border-strong);
+        border-radius:999px;padding:6px 12px;background:rgba(255,255,255,.04);text-shadow:none!important}
+    .dd-overtake-sub{font-size:14px;color:var(--dd-text-sec);font-weight:600}
+    .dd-overtake-sub span{color:var(--dd-rank-4);font-family:var(--dd-font-mono)}
+    @media(max-width:620px){
+        .dd-overtake-pill{min-width:0;padding:26px 22px}
+        .dd-overtake-match{font-size:27px}
+    }
 </style>

@@ -171,11 +171,12 @@ public function liveBoard(Request $request)
     $monthlyPerformance = $salesService->monthlyPerformanceRanking(null, $leaderboard);
     $monthlyPerformanceTotals = $salesService->monthlyPerformanceTotals($monthlyPerformance);
 
-    $latestApproved = \App\Models\DailySalesEntry::with('closer')
+    $latestApproved = \App\Models\DailySalesEntry::with('closer.team')
         ->where('status', 'approved')
         ->whereDate('entry_date', $todayNY)
-        ->latest('created_at')
+        ->latest('updated_at')
         ->first();
+    $teamOvertake = $this->teamOvertakeEvent($teamsSummary, $latestApproved);
 
     return response()->json([
         'board'                      => $dailyBoard,
@@ -190,8 +191,54 @@ public function liveBoard(Request $request)
         'monthly_performance_totals' => $monthlyPerformanceTotals,
         'latest_id'                  => $latestApproved->id ?? null,
         'latest_closer'              => $latestApproved->closer->name ?? null,
+        'team_overtake'              => $teamOvertake,
         'announcement'               => \Illuminate\Support\Facades\Cache::get('dashboard_announcement'),
     ]);
+}
+
+protected function teamOvertakeEvent(array $teamsSummary, ?\App\Models\DailySalesEntry $latestApproved): ?array
+{
+    if (! $latestApproved || ! $latestApproved->updated_at || $latestApproved->updated_at->lt(now()->subMinutes(10))) {
+        return null;
+    }
+
+    $winnerTeam = optional(optional($latestApproved->closer)->team)->name;
+    if (! $winnerTeam) {
+        return null;
+    }
+
+    $winnerRow = collect($teamsSummary)->firstWhere('team', $winnerTeam);
+    if (! $winnerRow) {
+        return null;
+    }
+
+    $currentApproved = (int) ($winnerRow['approved'] ?? 0);
+    if ($currentApproved <= 0) {
+        return null;
+    }
+
+    $previousApproved = $currentApproved - 1;
+    $beatenTeam = collect($teamsSummary)
+        ->filter(function ($team) use ($winnerTeam, $previousApproved, $currentApproved) {
+            $teamApproved = (int) ($team['approved'] ?? 0);
+
+            return ($team['team'] ?? null) !== $winnerTeam
+                && $previousApproved <= $teamApproved
+                && $currentApproved > $teamApproved;
+        })
+        ->sortByDesc(fn ($team) => (int) ($team['approved'] ?? 0))
+        ->first();
+
+    if (! $beatenTeam) {
+        return null;
+    }
+
+    return [
+        'id'     => $latestApproved->id,
+        'winner' => $winnerTeam,
+        'loser'  => $beatenTeam['team'],
+        'sales'  => $currentApproved,
+    ];
 }
 
 public function broadcastAnnouncement(Request $request)

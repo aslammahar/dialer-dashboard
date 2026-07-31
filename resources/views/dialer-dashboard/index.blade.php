@@ -44,6 +44,28 @@
     </div>
 </div>
 
+    <div id="ddTeamOvertakeCelebration">
+        <div class="dd-lightbeams" id="ddTeamOvertakeLights">
+            <div class="dd-beam dd-beam-1"></div>
+            <div class="dd-beam dd-beam-2"></div>
+            <div class="dd-beam dd-beam-3"></div>
+            <div class="dd-beam dd-beam-4"></div>
+        </div>
+        <div class="dd-fireworks" id="ddTeamOvertakeFireworks"></div>
+        <div class="dd-overtake-streaks" id="ddTeamOvertakeStreaks"></div>
+        <div class="dd-overtake-banner" id="ddTeamOvertakeBanner">
+            <div class="dd-overtake-pill">
+                <div class="dd-overtake-kicker">Team overtake</div>
+                <div class="dd-overtake-match">
+                    <span id="ddOvertakeWinner">—</span>
+                    <span class="dd-overtake-vs">beat</span>
+                    <span id="ddOvertakeLoser">—</span>
+                </div>
+                <div class="dd-overtake-sub"><span id="ddOvertakeSales">0</span> approved sales on board</div>
+            </div>
+        </div>
+    </div>
+
 
     <div class="dd-topbar">
     <div class="dd-brand">
@@ -651,6 +673,7 @@
 <script>
 (function(){
     var lastLatestId = null;
+    var lastTeamOvertakeId = null;
     var lastAnnouncement = null;
     var pollUrl = @json(route('dialer-dashboard.live-board'));
     var firstRun = true;
@@ -750,25 +773,112 @@
         return arr.reduce(function(s, r){ return s + (r[key] || 0); }, 0);
     }
 
-    var prevTeamRanks = {};
-    function checkTeamOvertake(teamsSummary) {
-        if (!firstRun && teamsSummary && teamsSummary.length > 0) {
+    window.ddCelebrateTeamOvertake = function (winnerTeam, passedTeam, currentSales) {
+        var overlay = document.getElementById('ddTeamOvertakeCelebration');
+        var fireworkHolder = document.getElementById('ddTeamOvertakeFireworks');
+        var streakHolder = document.getElementById('ddTeamOvertakeStreaks');
+        var banner = document.getElementById('ddTeamOvertakeBanner');
+        var winnerEl = document.getElementById('ddOvertakeWinner');
+        var loserEl = document.getElementById('ddOvertakeLoser');
+        var salesEl = document.getElementById('ddOvertakeSales');
+        if (!overlay || !fireworkHolder || !streakHolder || !banner || !winnerEl || !loserEl || !salesEl) return;
+
+        winnerEl.textContent = winnerTeam;
+        loserEl.textContent = passedTeam;
+        salesEl.textContent = currentSales;
+
+        banner.style.animation = 'none';
+        void banner.offsetWidth;
+        banner.style.animation = '';
+
+        fireworkHolder.innerHTML = '';
+        streakHolder.innerHTML = '';
+        overlay.classList.add('show');
+
+        var lineColors = [
+            'linear-gradient(90deg,rgba(255,255,255,0),#38bdf8,#34f5c5,rgba(255,255,255,0))',
+            'linear-gradient(90deg,rgba(255,255,255,0),#ffb020,#38bdf8,rgba(255,255,255,0))',
+            'linear-gradient(90deg,rgba(255,255,255,0),#a78bfa,#34f5c5,rgba(255,255,255,0))'
+        ];
+        for (var i = 0; i < 24; i++) {
+            var line = document.createElement('span');
+            line.className = 'dd-overtake-line';
+            line.style.width = (18 + Math.random() * 34) + 'vw';
+            line.style.left = (-34 + Math.random() * 26) + 'vw';
+            line.style.top = (10 + Math.random() * 78) + '%';
+            line.style.animationDelay = (Math.random() * 0.85) + 's';
+            line.style.animationDuration = (0.75 + Math.random() * 0.65) + 's';
+            line.style.background = lineColors[i % lineColors.length];
+            streakHolder.appendChild(line);
+        }
+
+        var fwColors = ['#38bdf8', '#34f5c5', '#ffb020', '#ffffff', '#a78bfa'];
+        function fireworkBurst() {
+            var originX = 18 + Math.random() * 64;
+            var originY = 12 + Math.random() * 45;
+            var flash = document.createElement('span');
+            flash.className = 'dd-fw-flash';
+            flash.style.left = originX + '%';
+            flash.style.top = originY + '%';
+            fireworkHolder.appendChild(flash);
+            setTimeout(function () { flash.remove(); }, 550);
+
+            for (var p = 0; p < 20; p++) {
+                var angle = (Math.PI * 2 * p) / 20 + Math.random() * 0.22;
+                var dist = 70 + Math.random() * 80;
+                var particle = document.createElement('span');
+                particle.className = 'dd-fw-particle';
+                particle.style.left = originX + '%';
+                particle.style.top = originY + '%';
+                particle.style.background = fwColors[p % fwColors.length];
+                particle.style.setProperty('--dd-fw-x', (Math.cos(angle) * dist) + 'px');
+                particle.style.setProperty('--dd-fw-y', (Math.sin(angle) * dist) + 'px');
+                fireworkHolder.appendChild(particle);
+                (function (el) { setTimeout(function () { el.remove(); }, 1150); })(particle);
+            }
+        }
+
+        fireworkBurst();
+        var fwTimers = [
+            setTimeout(fireworkBurst, 700),
+            setTimeout(fireworkBurst, 1500),
+            setTimeout(fireworkBurst, 2400),
+            setTimeout(fireworkBurst, 3400),
+            setTimeout(fireworkBurst, 4700),
+            setTimeout(fireworkBurst, 6200),
+            setTimeout(fireworkBurst, 8000)
+        ];
+
+        clearTimeout(window._ddTeamOvertakeTimeout);
+        (window._ddTeamOvertakeFwTimers || []).forEach(clearTimeout);
+        window._ddTeamOvertakeFwTimers = fwTimers;
+        window._ddTeamOvertakeTimeout = setTimeout(function () {
+            overlay.classList.remove('show');
+            fireworkHolder.innerHTML = '';
+            streakHolder.innerHTML = '';
+        }, 12000);
+    };
+
+    var prevTeamState = {};
+    function checkTeamOvertake(teamsSummary, suppressAnimation) {
+        if (!teamsSummary || teamsSummary.length === 0) {
+            prevTeamState = {};
+            return;
+        }
+
+        if (!firstRun) {
             for (var i = 0; i < teamsSummary.length; i++) {
                 var t = teamsSummary[i];
                 var teamName = t.team;
                 var currentRank = i + 1;
-                var currentSales = t.approved;
+                var currentSales = Number(t.approved || 0);
 
-                var oldRank = prevTeamRanks[teamName];
-                if (oldRank && currentRank < oldRank) {
-                    var passedTeam = null;
-                    for (var otherTeam in prevTeamRanks) {
-                        if (otherTeam !== teamName && prevTeamRanks[otherTeam] < oldRank && prevTeamRanks[otherTeam] >= currentRank) {
-                            passedTeam = otherTeam;
-                            break;
-                        }
-                    }
-                    if (passedTeam && typeof window.ddCelebrateTeamOvertake === 'function') {
+                var oldState = prevTeamState[teamName];
+                if (oldState && currentRank < oldState.rank && currentSales > oldState.approved) {
+                    var beatenRow = teamsSummary[i + 1] || null;
+                    var passedTeam = beatenRow && beatenRow.team !== teamName ? beatenRow.team : null;
+
+                    if (!suppressAnimation && passedTeam && typeof window.ddCelebrateTeamOvertake === 'function') {
                         window.ddCelebrateTeamOvertake(teamName, passedTeam, currentSales);
                         break;
                     }
@@ -776,9 +886,12 @@
             }
         }
 
-        prevTeamRanks = {};
+        prevTeamState = {};
         for (var j = 0; j < teamsSummary.length; j++) {
-            prevTeamRanks[teamsSummary[j].team] = j + 1;
+            prevTeamState[teamsSummary[j].team] = {
+                rank: j + 1,
+                approved: Number(teamsSummary[j].approved || 0)
+            };
         }
     }
 
@@ -930,7 +1043,16 @@
                             '<td>' + tt.left + '</td>';
                     }
 
-                    checkTeamOvertake(data.teams_summary);
+                    var serverOvertake = data.team_overtake || null;
+                    var serverOvertakeId = serverOvertake ? String(serverOvertake.id) : null;
+                    var shouldPlayServerOvertake = serverOvertake && serverOvertakeId !== lastTeamOvertakeId;
+
+                    checkTeamOvertake(data.teams_summary, shouldPlayServerOvertake);
+
+                    if (shouldPlayServerOvertake && typeof window.ddCelebrateTeamOvertake === 'function') {
+                        window.ddCelebrateTeamOvertake(serverOvertake.winner, serverOvertake.loser, serverOvertake.sales);
+                        lastTeamOvertakeId = serverOvertakeId;
+                    }
                 }
 
                 // Monthly Performance Ranking
