@@ -280,6 +280,10 @@
             <span class="dd-top-closer-stat-lbl">Level</span>
         </div>
         <div class="dd-top-closer-stat">
+            <span class="dd-top-closer-stat-val" id="ddTopCloserGI">{{ $topCloser['gi'] ?? 0 }}</span>
+            <span class="dd-top-closer-stat-lbl">GI</span>
+        </div>
+        <div class="dd-top-closer-stat">
             <span class="dd-top-closer-stat-val" id="ddTopCloserLevelPct">{{ $topCloser['level_pct'] ?? 0 }}%</span>
             <span class="dd-top-closer-stat-lbl">Level %</span>
         </div>
@@ -930,6 +934,7 @@
 
                 // Today's Top Closer
                 var topCloserCard = document.getElementById('ddTopCloserCard');
+
                 if (topCloserCard && data.board.length > 0) {
                     var topCloser = null;
                     var topScore = 0;
@@ -949,9 +954,18 @@
                         document.getElementById('ddTopCloserGI').textContent = topCloser.gi;
                         document.getElementById('ddTopCloserLevelPct').textContent = topCloser.level_pct + '%';
                     }
+                    // Today's Top Team (alongside top closer)
+                    var topTeamNameEl = document.getElementById('ddTopTeamName');
+                    var topTeamApprovedEl = document.getElementById('ddTopTeamApproved');
+                    if (topTeamNameEl && data.teams_summary && data.teams_summary.length > 0) {
+                        topTeamNameEl.textContent = data.teams_summary[0].team;
+                        topTeamApprovedEl.textContent = data.teams_summary[0].approved + ' approved sales';
+                    }
                 } else if (topCloserCard) {
                     topCloserCard.style.display = 'none';
                 }
+                
+                
 
                 // Stat cards
                 var totalSalesEl = document.getElementById('ddTotalSalesVal');
@@ -1082,14 +1096,6 @@
                             '<td>' + mt.avg_talk_time_avg + '</td>' +
                             '<td>-</td>';
                     }
-
-                    // Today's Top Team (alongside top closer)
-                    var topTeamNameEl = document.getElementById('ddTopTeamName');
-                    var topTeamApprovedEl = document.getElementById('ddTopTeamApproved');
-                    if (topTeamNameEl && data.teams_summary && data.teams_summary.length > 0) {
-                        topTeamNameEl.textContent = data.teams_summary[0].team;
-                        topTeamApprovedEl.textContent = data.teams_summary[0].approved + ' approved sales';
-                    }
                 }
                 
                 // Celebration on new approved sale
@@ -1105,7 +1111,6 @@
             })
             .catch(function(err){ console.error('Live board poll failed', err); });
     }
-    
 
     poll();
     setInterval(poll, 5000); // ab 5 second

@@ -128,10 +128,10 @@ public function topPerformersToday(array $dailyBoard): array
  */
 public function monthlyPerformanceRanking(?string $month = null, array $dialerLeaderboard = []): array
 {
-    $monthStart = $month ? Carbon::parse($month)->startOfMonth() : now()->startOfMonth();
-    $monthEnd   = now()->min($monthStart->copy()->endOfMonth());
+    $monthStart = $month ? Carbon::parse($month, 'America/New_York')->startOfMonth() : now('America/New_York')->startOfMonth();
+    $monthEnd   = now('America/New_York')->min($monthStart->copy()->endOfMonth());
 
-    $entries = DailySalesEntry::with('closer.team')
+    $entries = DailySalesEntry::with(['closer.team'])
         ->whereBetween('entry_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
         ->get();
 
@@ -314,7 +314,7 @@ public function rankedPerformersToday(array $dailyBoard): array
      */
     public function monthlyGoal(): array
 {
-    $monthStart = now()->startOfMonth();
+    $monthStart = now('America/New_York')->startOfMonth();
     $target = SalesTarget::whereDate('month', $monthStart->toDateString())->first()
         ?? new SalesTarget([
             'spd_target'         => 2.0,
@@ -328,7 +328,7 @@ public function rankedPerformersToday(array $dailyBoard): array
         ]);
 
     $approvedThisMonth = DailySalesEntry::where('status', 'approved')
-        ->whereBetween('entry_date', [$monthStart->toDateString(), now()->toDateString()])
+        ->whereBetween('entry_date', [$monthStart->toDateString(), now('America/New_York')->toDateString()])
         ->count();
 
     $daysElapsed   = max($monthStart->diffInDays(now()) + 1, 1);
@@ -395,8 +395,8 @@ public function monthlyClosersReport(?string $month = null): array
  */
 public function monthlyClientsReport(?string $from = null, ?string $to = null): array
 {
-    $from = $from ?? now()->startOfMonth()->toDateString();
-    $to   = $to ?? now()->toDateString();
+    $from = $from ?? now('America/New_York')->startOfMonth()->toDateString();
+    $to   = $to ?? now('America/New_York')->toDateString();
 
     $entries = DailySalesEntry::with('client')
         ->whereBetween('entry_date', [$from, $to])
@@ -430,10 +430,10 @@ public function monthlyClientsReport(?string $from = null, ?string $to = null): 
  */
 public function monthlyTeamsReport(?string $month = null): array
 {
-    $monthStart = $month ? Carbon::parse($month)->startOfMonth() : now()->startOfMonth();
+    $monthStart = $month ? Carbon::parse($month, 'America/New_York')->startOfMonth() : now('America/New_York')->startOfMonth();
 
     $entries = DailySalesEntry::with('team')
-        ->whereBetween('entry_date', [$monthStart->toDateString(), now()->toDateString()])
+        ->whereBetween('entry_date', [$monthStart->toDateString(), now('America/New_York')->toDateString()])
         ->whereNotNull('sales_team_id')
         ->get();
 
@@ -465,8 +465,8 @@ public function monthlyTeamsReport(?string $month = null): array
  */
 public function teamWiseClosersBoard(?string $from = null, ?string $to = null): array
 {
-    $from = $from ?? now()->startOfMonth()->toDateString();
-    $to   = $to ?? now()->toDateString();
+    $from = $from ?? now('America/New_York')->startOfMonth()->toDateString();
+    $to   = $to ?? now('America/New_York')->toDateString();
 
     $presentCloserIds = \App\Models\ClosersAttendance::where('status', 'present')
         ->whereBetween('attendance_date', [$from, $to])
@@ -496,7 +496,7 @@ public function teamWiseClosersBoard(?string $from = null, ?string $to = null): 
                 ->groupBy('sales_closer_id')
                 ->map(function ($rows) use ($clientNames, $workingDaysByCloser) {
                     $closer = $rows->first()->closer;
-                    
+
                     if (! $closer) {
                         return null;
                     }
@@ -534,19 +534,19 @@ public function teamWiseClosersBoard(?string $from = null, ?string $to = null): 
             $sum = fn ($key) => array_sum(array_column($closers, $key));
 
             $totals = [
-    'mtd'   => $sum('mtd'),
-    'level' => $sum('level'),
-    'gi'    => $sum('gi'),
-    'clients' => collect($clientNames)->mapWithKeys(function ($c) use ($closers) {
-        $total = array_sum(array_map(fn ($cl) => $cl['clients'][$c] ?? 0, $closers));
-        $closersWithSales = count(array_filter($closers, fn ($cl) => ($cl['clients'][$c] ?? 0) > 0));
+                'mtd'   => $sum('mtd'),
+                'level' => $sum('level'),
+                'gi'    => $sum('gi'),
+                'clients' => collect($clientNames)->mapWithKeys(function ($c) use ($closers) {
+                    $total = array_sum(array_map(fn ($cl) => $cl['clients'][$c] ?? 0, $closers));
+                    $closersWithSales = count(array_filter($closers, fn ($cl) => ($cl['clients'][$c] ?? 0) > 0));
 
-        return [$c => [
-            'total' => $total,
-            'avg'   => $closersWithSales > 0 ? round($total / $closersWithSales, 1) : 0,
-        ]];
-    })->all(),
-];
+                    return [$c => [
+                        'total' => $total,
+                        'avg'   => $closersWithSales > 0 ? round($total / $closersWithSales, 1) : 0,
+                    ]];
+                })->all(),
+            ];
 
             $teamModel = \App\Models\SalesTeam::where('name', $teamName)->first();
             $totalTeamClosers = $count;
@@ -627,10 +627,10 @@ protected function timeSinceLastSale(int $closerId): ?string
  */
 public function teamBoxes(?string $month = null): array
 {
-    $monthStart = $month ? Carbon::parse($month)->startOfMonth() : now()->startOfMonth();
+    $monthStart = $month ? Carbon::parse($month, 'America/New_York')->startOfMonth() : now('America/New_York')->startOfMonth();
 
     $approvedEntries = DailySalesEntry::where('status', 'approved')
-        ->whereBetween('entry_date', [$monthStart->toDateString(), now()->toDateString()])
+        ->whereBetween('entry_date', [$monthStart->toDateString(), now('America/New_York')->toDateString()])
         ->get();
 
     $closers = \App\Models\SalesCloser::with('team')->where('active', true)->orderBy('name')->get();
@@ -639,17 +639,17 @@ public function teamBoxes(?string $month = null): array
         ->groupBy(fn ($c) => $c->team->name ?? 'Unassigned')
         ->map(function ($teamClosers, $teamName) use ($approvedEntries) {
             $closerStats = $teamClosers->map(function ($closer) use ($approvedEntries) {
-    $closerEntries = $approvedEntries->where('sales_closer_id', $closer->id);
-    $count = $closerEntries->count();
-    $level = $closerEntries->where('sale_type', 'level')->count();
+                $closerEntries = $approvedEntries->where('sales_closer_id', $closer->id);
+                $count = $closerEntries->count();
+                $level = $closerEntries->where('sale_type', 'level')->count();
 
-    return [
-        'id'        => $closer->id,
-        'name'      => $closer->name,
-        'approved'  => $count,
-        'level_pct' => $count > 0 ? round(($level / $count) * 100, 1) : 0,
-    ];
-})
+                return [
+                    'id'        => $closer->id,
+                    'name'      => $closer->name,
+                    'approved'  => $count,
+                    'level_pct' => $count > 0 ? round(($level / $count) * 100, 1) : 0,
+                ];
+            })
             ->sortByDesc('approved')
             ->values()
             ->all();
@@ -1201,8 +1201,8 @@ public function teamsSummaryTotals(array $teamsSummary): array
  */
 public function clientsSummaryTable(?string $from = null, ?string $to = null): array
 {
-    $from = $from ?? now()->startOfMonth()->toDateString();
-    $to   = $to ?? now()->toDateString();
+    $from = $from ?? now('America/New_York')->startOfMonth()->toDateString();
+    $to   = $to ?? now('America/New_York')->toDateString();
 
     $entries = DailySalesEntry::with('client')
         ->whereBetween('entry_date', [$from, $to])
@@ -1241,8 +1241,8 @@ public function clientsSummaryTable(?string $from = null, ?string $to = null): a
  */
 public function carriersSummaryTable(?string $from = null, ?string $to = null): array
 {
-    $from = $from ?? now()->startOfMonth()->toDateString();
-    $to   = $to ?? now()->toDateString();
+    $from = $from ?? now('America/New_York')->startOfMonth()->toDateString();
+    $to   = $to ?? now('America/New_York')->toDateString();
 
     $entries = DailySalesEntry::with('carrier')
         ->whereBetween('entry_date', [$from, $to])
@@ -1381,8 +1381,8 @@ public function activeClosersDialerStats(array $dialerLeaderboard): array
  */
 public function closerClientMatrix(?string $from = null, ?string $to = null): array
 {
-    $from = $from ?? now()->startOfMonth()->toDateString();
-    $to   = $to ?? now()->toDateString();
+    $from = $from ?? now('America/New_York')->startOfMonth()->toDateString();
+    $to   = $to ?? now('America/New_York')->toDateString();
 
     $entries = DailySalesEntry::with(['closer', 'client'])
         ->whereBetween('entry_date', [$from, $to])
@@ -1434,8 +1434,8 @@ public function closerClientMatrix(?string $from = null, ?string $to = null): ar
  */
 public function closerCarrierMatrix(?string $from = null, ?string $to = null, array $dialerLeaderboard = []): array
 {
-    $from = $from ?? now()->startOfMonth()->toDateString();
-    $to   = $to ?? now()->toDateString();
+    $from = $from ?? now('America/New_York')->startOfMonth()->toDateString();
+    $to   = $to ?? now('America/New_York')->toDateString();
 
     $entries = DailySalesEntry::with(['closer', 'carrier'])
         ->whereBetween('entry_date', [$from, $to])

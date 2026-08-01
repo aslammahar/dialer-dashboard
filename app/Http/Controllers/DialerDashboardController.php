@@ -23,11 +23,11 @@ protected array $editorEmails = [
     $view = $request->get('view', 'active');
 
     $defaultFrom = $view === 'archive'
-        ? now()->startOfMonth()->toDateString()
-        : now()->subDays(1)->toDateString();
+        ? now('America/New_York')->startOfMonth()->toDateString()
+        : now('America/New_York')->subDays(1)->toDateString();
     $defaultTo = $view === 'archive'
-        ? now()->endOfMonth()->toDateString()
-        : now()->toDateString();
+        ? now('America/New_York')->endOfMonth()->toDateString()
+        : now('America/New_York')->toDateString();
 
     $filters = [
         'view'  => $view,
@@ -71,20 +71,20 @@ if ($isCloser) {
     }
 
     $todayTotals = ['calls' => 0, 'avg_talk_time' => '0:00:00'];
-try {
-    $todayLeaderboard = $dialerApi->leaderboard([
-        'from' => now()->toDateString(),
-        'to'   => now()->toDateString(),
-    ]);
-    $todayTotals = $dialerApi->leaderboardTotals($todayLeaderboard);
-} catch (\Throwable $e) {
-    report($e);
-}
+    $todayNY = now('America/New_York')->toDateString();
+    try {
+        $todayLeaderboard = $dialerApi->leaderboard([
+            'from' => $todayNY,
+            'to'   => $todayNY,
+        ]);
+        $todayTotals = $dialerApi->leaderboardTotals($todayLeaderboard);
+    } catch (\Throwable $e) {
+        report($e);
+    }
 
     // Live sales board + monthly goal + team boxes — pulled from our own
     // DailySalesEntry table (see SalesService), no more hardcoded numbers.
-  $salesService      = app(SalesService::class);
-$todayNY            = now('America/New_York')->toDateString();
+    $salesService      = app(SalesService::class);
 
 $dailyBoard         = $salesService->dailyBoard($todayNY);
 $dailyBoard         = $salesService->mergeDialerStats($dailyBoard, $leaderboard);
