@@ -203,15 +203,19 @@
     @keyframes dd-banner-pop{0%{opacity:0;transform:translate(-50%,-40%) scale(.85)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
     @keyframes dd-banner-out{to{opacity:0;transform:translate(-50%,-55%) scale(.96)}}
 
-    .dd-sale-pill{display:inline-flex;flex-direction:column;align-items:center;gap:6px;
+    .dd-sale-pill{display:inline-flex;flex-direction:column;align-items:center;gap:6px;position:relative;overflow:hidden;
         background:linear-gradient(180deg,rgba(17,22,29,.92),rgba(9,13,18,.96));
         backdrop-filter:blur(16px);border:2px solid rgba(52,245,197,.4);
         border-radius:26px;padding:32px 56px;box-shadow:0 24px 60px rgba(0,0,0,.75),0 0 45px rgba(52,245,197,.22);min-width:440px}
+    .dd-sale-pill::before{content:'';position:absolute;inset:0;
+        background:linear-gradient(120deg,rgba(52,245,197,0),rgba(52,245,197,.16),rgba(255,176,32,.12),rgba(52,245,197,0));
+        transform:translateX(-100%);animation:dd-sale-sweep 2.2s ease-in-out infinite}
+    @keyframes dd-sale-sweep{50%,100%{transform:translateX(100%)}}
     .dd-sale-kicker{font-size:13px;text-transform:uppercase;letter-spacing:.22em;color:var(--dd-accent);font-weight:700;margin-bottom:4px}
-    .dd-sale-name{font-family:var(--dd-font-display);font-weight:700;font-size:42px;letter-spacing:.2px;
+    .dd-sale-name{font-family:var(--dd-font-display);font-weight:700;font-size:52px;letter-spacing:.2px;
         background:linear-gradient(100deg,var(--dd-text) 30%,var(--dd-accent) 55%,var(--dd-text) 78%);
         background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
-        animation:dd-shimmer 2.6s linear infinite}
+        animation:dd-shimmer 2.6s linear infinite;position:relative;z-index:1;text-shadow:0 0 28px rgba(52,245,197,.18)}
     @keyframes dd-shimmer{0%{background-position:0% 0}100%{background-position:-220% 0}}
     .dd-sale-sub{font-size:16px;color:var(--dd-text-sec);margin-top:4px;letter-spacing:.02em;font-weight:500}
 
@@ -372,20 +376,61 @@
     
     /* Announcement Broadcast Celebration Styles */
     #ddAnnouncementCelebration{position:fixed;inset:0;z-index:99999;pointer-events:none;display:none;overflow:hidden;
-        background:radial-gradient(circle at 50% 65%, rgba(255,176,32,.08), rgba(9,13,18,0) 60%);
+        background:
+            radial-gradient(circle at 50% 46%, rgba(255,176,32,.18), rgba(9,13,18,.18) 34%, rgba(9,13,18,0) 68%),
+            radial-gradient(circle at 50% 82%, rgba(52,245,197,.10), rgba(9,13,18,0) 48%);
         opacity:0;transition:opacity .5s ease}
     #ddAnnouncementCelebration.show{display:block;opacity:1}
+    #ddAnnouncementCelebration.show::before{content:'';position:absolute;inset:-20%;opacity:.34;
+        background:conic-gradient(from 90deg, rgba(255,176,32,0), rgba(255,176,32,.16), rgba(52,245,197,.10), rgba(255,176,32,0));
+        animation:dd-ann-rotate 7s linear infinite}
+    @keyframes dd-ann-rotate{to{transform:rotate(360deg)}}
     .dd-msg-banner{position:absolute;top:45%;left:50%;transform:translate(-50%,-50%) scale(.85);
         opacity:0;text-align:center;animation:dd-banner-pop .6s cubic-bezier(.22,1,.36,1) forwards,
         dd-banner-out .6s ease forwards 59s}
     .dd-msg-pill{display:inline-flex;flex-direction:column;align-items:center;gap:6px;
-        background:linear-gradient(180deg,rgba(17,22,29,.92),rgba(9,13,18,.96));
-        backdrop-filter:blur(16px);border:2px solid rgba(255,176,32,.5);
-        border-radius:26px;padding:32px 56px;box-shadow:0 24px 60px rgba(0,0,0,.75),0 0 45px rgba(255,176,32,.3);min-width:440px}
-    .dd-msg-kicker{font-size:14px;text-transform:uppercase;letter-spacing:.22em;color:var(--dd-gold);font-weight:700;margin-bottom:4px}
+        background:linear-gradient(180deg,rgba(17,22,29,.96),rgba(9,13,18,.99));
+        backdrop-filter:blur(18px);border:2px solid rgba(255,176,32,.58);
+        border-radius:30px;padding:36px 64px 34px;box-shadow:0 30px 86px rgba(0,0,0,.82),0 0 58px rgba(255,176,32,.34), inset 0 1px 0 rgba(255,255,255,.09);
+        min-width:520px;position:relative;overflow:hidden}
+    .dd-msg-pill::before{content:'';position:absolute;top:0;left:-35%;width:34%;height:100%;
+        background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.16),rgba(255,255,255,0));
+        transform:skewX(-18deg);animation:dd-ann-sweep 2.8s ease-in-out infinite}
+    @keyframes dd-ann-sweep{0%{left:-40%}55%,100%{left:112%}}
+    .dd-msg-kicker{display:inline-flex;align-items:center;gap:8px;font-size:14px;text-transform:uppercase;letter-spacing:.22em;color:var(--dd-gold);font-weight:700;margin-bottom:6px}
+    .dd-msg-kicker::before{content:'';width:10px;height:10px;border-radius:50%;background:#ff3b3b;box-shadow:0 0 0 0 rgba(255,59,59,.55);animation:dd-live-dot 1.05s ease-in-out infinite}
+    @keyframes dd-live-dot{70%{box-shadow:0 0 0 10px rgba(255,59,59,0)}100%{box-shadow:0 0 0 0 rgba(255,59,59,0)}}
+    .dd-msg-person{display:none;flex-direction:column;align-items:center;gap:10px;margin:10px 0 8px;padding:18px 24px;border-radius:26px;
+        background:rgba(255,255,255,.055);border:1px solid rgba(255,176,32,.30);position:relative}
+    .dd-msg-avatar-wrap{position:relative;width:184px;height:184px;display:flex;align-items:center;justify-content:center}
+    .dd-msg-avatar-ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(255,176,32,.36);animation:dd-avatar-ring 2.2s ease-out infinite}
+    .dd-msg-avatar-ring.ring-2{animation-delay:.8s;border-color:rgba(52,245,197,.28)}
+    @keyframes dd-avatar-ring{0%{opacity:.9;transform:scale(.86)}100%{opacity:0;transform:scale(1.18)}}
+    .dd-msg-avatar{width:168px;height:168px;border-radius:50%;object-fit:cover;border:4px solid rgba(255,176,32,.78);
+        box-shadow:0 0 28px rgba(255,176,32,.30),0 0 0 8px rgba(255,176,32,.08);background:var(--dd-surface-alt);position:relative;z-index:2}
+    .dd-msg-author{font-family:var(--dd-font-display);font-size:22px;font-weight:700;color:var(--dd-text);
+        line-height:1.1;text-align:center}
+    .dd-msg-wave{display:flex;align-items:flex-end;gap:4px;height:28px;margin-top:8px;opacity:.9}
+    .dd-msg-wave span{width:5px;border-radius:999px;background:linear-gradient(180deg,var(--dd-gold),var(--dd-accent));height:9px;animation:dd-ann-wave .88s ease-in-out infinite}
+    .dd-msg-wave span:nth-child(2){animation-delay:.08s}
+    .dd-msg-wave span:nth-child(3){animation-delay:.16s}
+    .dd-msg-wave span:nth-child(4){animation-delay:.24s}
+    .dd-msg-wave span:nth-child(5){animation-delay:.16s}
+    .dd-msg-wave span:nth-child(6){animation-delay:.08s}
+    .dd-msg-wave span:nth-child(7){animation-delay:.02s}
+    @keyframes dd-ann-wave{0%,100%{height:8px;opacity:.5}50%{height:27px;opacity:1}}
+    @media(max-width:620px){
+        .dd-msg-pill{min-width:0;max-width:92vw;padding:28px 22px}
+        .dd-msg-avatar-wrap{width:132px;height:132px}
+        .dd-msg-avatar{width:120px;height:120px}
+        .dd-msg-author{font-size:18px}
+    }
     .dd-msg-text{font-family:var(--dd-font-display);font-weight:700;font-size:42px;letter-spacing:.2px;
-        color:var(--dd-text);line-height:1.3;margin:10px 0;max-width:800px;
-        text-shadow:0 0 20px rgba(255,176,32,.4)}
+        color:transparent;line-height:1.25;margin:12px 0 2px;max-width:860px;
+        background:linear-gradient(95deg,#fff 12%,#ffcf75 38%,#34f5c5 62%,#fff 88%);
+        background-size:220% 100%;-webkit-background-clip:text;background-clip:text;
+        text-shadow:0 0 24px rgba(255,176,32,.24);animation:dd-ann-text-shimmer 3s linear infinite}
+    @keyframes dd-ann-text-shimmer{to{background-position:-220% 0}}
 
     /* Team Overtake Celebration */
     #ddTeamOvertakeCelebration{position:fixed;inset:0;z-index:99999;pointer-events:none;display:none;overflow:hidden;

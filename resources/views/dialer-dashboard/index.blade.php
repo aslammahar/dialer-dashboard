@@ -39,7 +39,18 @@
     <div class="dd-msg-banner" id="ddMsgBanner">
         <div class="dd-msg-pill">
             <div class="dd-msg-kicker">📢 Announcement</div>
+            <div class="dd-msg-person" id="ddMsgPerson">
+                <div class="dd-msg-avatar-wrap">
+                    <span class="dd-msg-avatar-ring ring-1"></span>
+                    <span class="dd-msg-avatar-ring ring-2"></span>
+                    <img src="" alt="" class="dd-msg-avatar" id="ddMsgAuthorImage">
+                </div>
+                <div class="dd-msg-author" id="ddMsgAuthorName">—</div>
+            </div>
             <div class="dd-msg-text" id="ddMsgText">—</div>
+            <div class="dd-msg-wave" id="ddMsgWave">
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
         </div>
     </div>
 </div>
@@ -1103,10 +1114,13 @@
                     window.ddCelebrateSale(data.latest_closer);
                 }
                 lastLatestId = data.latest_id;
-                if (data.announcement && data.announcement !== lastAnnouncement) {
+                var announcementId = data.announcement && typeof data.announcement === 'object'
+                    ? data.announcement.id
+                    : data.announcement;
+                if (!firstRun && data.announcement && announcementId !== lastAnnouncement) {
                     window.ddCelebrateAnnouncement(data.announcement);
                 }
-                lastAnnouncement = data.announcement || null;
+                lastAnnouncement = announcementId || null;
                 firstRun = false;
             })
             .catch(function(err){ console.error('Live board poll failed', err); });
@@ -1117,14 +1131,126 @@
 })();
 </script>
 <script>
-window.ddCelebrateAnnouncement = function (message) {
+window.ddPlayAnnouncementIntro = function () {
+    var AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+
+    try {
+        var ctx = window._ddAnnouncementAudioCtx || new AudioContext();
+        window._ddAnnouncementAudioCtx = ctx;
+        if (ctx.state === 'suspended') ctx.resume();
+
+        var now = ctx.currentTime;
+        var master = ctx.createGain();
+        master.gain.setValueAtTime(0.0001, now);
+        master.gain.exponentialRampToValueAtTime(0.42, now + 0.03);
+        master.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
+        master.connect(ctx.destination);
+
+        var boom = ctx.createOscillator();
+        boom.type = 'sine';
+        boom.frequency.setValueAtTime(82, now);
+        boom.frequency.exponentialRampToValueAtTime(54, now + 0.38);
+        var boomGain = ctx.createGain();
+        boomGain.gain.setValueAtTime(0.0001, now);
+        boomGain.gain.exponentialRampToValueAtTime(0.34, now + 0.035);
+        boomGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.48);
+        boom.connect(boomGain).connect(master);
+        boom.start(now);
+        boom.stop(now + 0.54);
+
+        [523.25, 659.25, 783.99].forEach(function (freq, index) {
+            var start = now + 0.28 + (index * 0.12);
+            var tone = ctx.createOscillator();
+            tone.type = 'sine';
+            tone.frequency.setValueAtTime(freq, start);
+            var gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.exponentialRampToValueAtTime(0.16, start + 0.025);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.20);
+            tone.connect(gain).connect(master);
+            tone.start(start);
+            tone.stop(start + 0.24);
+        });
+    } catch (e) {
+        console.warn('Announcement intro audio failed', e);
+    }
+};
+
+window.ddSpeakAnnouncement = function (text, authorName) {
+    if (!text || !('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return;
+
+    window.speechSynthesis.cancel();
+
+    var speakText = (authorName ? 'Announcement from ' + authorName + '. ' : 'Attention. ') + text;
+    var utterance = new SpeechSynthesisUtterance(speakText);
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    var voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+    var preferredVoice = voices
+        .filter(function (voice) { return /^en(-|_)?/i.test(voice.lang || ''); })
+        .sort(function (a, b) {
+            var score = function (voice) {
+                var name = (voice.name || '').toLowerCase();
+                var lang = (voice.lang || '').toLowerCase();
+                var s = 0;
+                if (/zira|aria|jenny|sonia|guy|david|mark|daniel|ravi|heera/.test(name)) s += 5;
+                if (/natural|online|enhanced/.test(name)) s += 3;
+                if (/microsoft|google/.test(name)) s += 2;
+                if (lang === 'en-in') s += 3;
+                if (lang === 'en-us' || lang === 'en-gb') s += 2;
+                return s;
+            };
+            return score(b) - score(a);
+        })[0];
+    if (preferredVoice) {
+        utterance.voice = preferredVoice;
+        utterance.lang = preferredVoice.lang || 'en-US';
+    } else {
+        utterance.lang = 'en-US';
+    }
+
+    setTimeout(function () {
+        window.speechSynthesis.speak(utterance);
+    }, 820);
+};
+
+if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) {
+    window.speechSynthesis.onvoiceschanged = function () {
+        window.speechSynthesis.getVoices();
+    };
+}
+
+window.ddCelebrateAnnouncement = function (announcement) {
     var overlay = document.getElementById('ddAnnouncementCelebration');
     var fireworkHolder = document.getElementById('ddAnnFireworks');
     var banner = document.getElementById('ddMsgBanner');
     var textEl = document.getElementById('ddMsgText');
+    var personEl = document.getElementById('ddMsgPerson');
+    var imageEl = document.getElementById('ddMsgAuthorImage');
+    var nameEl = document.getElementById('ddMsgAuthorName');
     if (!overlay || !banner || !textEl) return;
 
-    textEl.textContent = message;
+    var payload = (announcement && typeof announcement === 'object')
+        ? announcement
+        : { message: announcement };
+
+    textEl.textContent = payload.message || '';
+    window.ddPlayAnnouncementIntro();
+    window.ddSpeakAnnouncement(payload.message || '', payload.author_name || '');
+    if (personEl && imageEl && nameEl) {
+        nameEl.textContent = payload.author_name || 'Announcement';
+        if (payload.author_image) {
+            imageEl.src = payload.author_image;
+            imageEl.alt = payload.author_name || 'Announcement author';
+            personEl.style.display = 'inline-flex';
+        } else {
+            imageEl.removeAttribute('src');
+            personEl.style.display = 'none';
+        }
+    }
 
     banner.style.animation = 'none';
     void banner.offsetWidth;
@@ -1280,6 +1406,132 @@ window.ddCelebrateAnnouncement = function (message) {
 </script>
 
 <script>
+window.ddPlaySaleFireworkSound = function (isBigBurst) {
+    var AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+
+    try {
+        var ctx = window._ddSaleAudioCtx || new AudioContext();
+        window._ddSaleAudioCtx = ctx;
+        if (ctx.state === 'suspended') ctx.resume();
+
+        var now = ctx.currentTime;
+        var master = ctx.createGain();
+        master.gain.setValueAtTime(isBigBurst ? 0.82 : 0.58, now);
+        master.gain.exponentialRampToValueAtTime(0.0001, now + 0.78);
+        master.connect(ctx.destination);
+
+        var thump = ctx.createOscillator();
+        thump.type = 'sine';
+        thump.frequency.setValueAtTime(isBigBurst ? 118 : 96, now);
+        thump.frequency.exponentialRampToValueAtTime(58, now + 0.22);
+        var thumpGain = ctx.createGain();
+        thumpGain.gain.setValueAtTime(0.0001, now);
+        thumpGain.gain.exponentialRampToValueAtTime(isBigBurst ? 0.45 : 0.25, now + 0.02);
+        thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+        thump.connect(thumpGain).connect(master);
+        thump.start(now);
+        thump.stop(now + 0.36);
+
+        function crackle(delay, gainAmount, duration) {
+            var noiseLength = Math.floor(ctx.sampleRate * duration);
+            var noiseBuffer = ctx.createBuffer(1, noiseLength, ctx.sampleRate);
+            var data = noiseBuffer.getChannelData(0);
+            for (var i = 0; i < noiseLength; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / noiseLength, 1.7);
+            }
+            var noise = ctx.createBufferSource();
+            noise.buffer = noiseBuffer;
+            var filter = ctx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.setValueAtTime(720 + Math.random() * 900, now + delay);
+            var noiseGain = ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.0001, now + delay);
+            noiseGain.gain.exponentialRampToValueAtTime(gainAmount, now + delay + 0.012);
+            noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration);
+            noise.connect(filter).connect(noiseGain).connect(master);
+            noise.start(now + delay);
+        }
+
+        var crackleCount = isBigBurst ? 7 : 4;
+        for (var crack = 0; crack < crackleCount; crack++) {
+            crackle(0.035 + Math.random() * 0.22, isBigBurst ? 0.48 : 0.34, 0.12 + Math.random() * 0.10);
+        }
+
+        [880, 1174, 1568].forEach(function (freq, index) {
+            var start = now + 0.05 + index * 0.045;
+            var spark = ctx.createOscillator();
+            spark.type = 'triangle';
+            spark.frequency.setValueAtTime(freq + Math.random() * 80, start);
+            spark.frequency.exponentialRampToValueAtTime(freq * 0.68, start + 0.13);
+            var sparkGain = ctx.createGain();
+            sparkGain.gain.setValueAtTime(0.0001, start);
+            sparkGain.gain.exponentialRampToValueAtTime(isBigBurst ? 0.16 : 0.12, start + 0.012);
+            sparkGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.16);
+            spark.connect(sparkGain).connect(master);
+            spark.start(start);
+            spark.stop(start + 0.18);
+        });
+    } catch (e) {
+        console.warn('Sale firework audio failed', e);
+    }
+};
+
+window.ddSpeakSaleClosed = function (closerName) {
+    if (!closerName || !('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return;
+
+    window.speechSynthesis.cancel();
+
+    var utterance = new SpeechSynthesisUtterance('New sale closed by ' + closerName + '. Congratulations ' + closerName + '.');
+    utterance.rate = 0.92;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    var voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+    var preferredVoice = voices
+        .filter(function (voice) { return /^en(-|_)?/i.test(voice.lang || ''); })
+        .sort(function (a, b) {
+            var score = function (voice) {
+                var name = (voice.name || '').toLowerCase();
+                var lang = (voice.lang || '').toLowerCase();
+                var s = 0;
+                if (/zira|aria|jenny|sonia|guy|david|mark|daniel|ravi|heera/.test(name)) s += 5;
+                if (/natural|online|enhanced/.test(name)) s += 3;
+                if (/microsoft|google/.test(name)) s += 2;
+                if (lang === 'en-in') s += 3;
+                if (lang === 'en-us' || lang === 'en-gb') s += 2;
+                return s;
+            };
+            return score(b) - score(a);
+        })[0];
+    if (preferredVoice) {
+        utterance.voice = preferredVoice;
+        utterance.lang = preferredVoice.lang || 'en-US';
+    } else {
+        utterance.lang = 'en-US';
+    }
+
+    setTimeout(function () {
+        window.speechSynthesis.speak(utterance);
+    }, 520);
+};
+
+window.ddPrimeDashboardAudio = function () {
+    var AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+
+    try {
+        window._ddSaleAudioCtx = window._ddSaleAudioCtx || new AudioContext();
+        window._ddAnnouncementAudioCtx = window._ddAnnouncementAudioCtx || new AudioContext();
+        if (window._ddSaleAudioCtx.state === 'suspended') window._ddSaleAudioCtx.resume();
+        if (window._ddAnnouncementAudioCtx.state === 'suspended') window._ddAnnouncementAudioCtx.resume();
+    } catch (e) {}
+};
+
+['pointerdown', 'keydown', 'touchstart'].forEach(function (eventName) {
+    window.addEventListener(eventName, window.ddPrimeDashboardAudio, { once: true, passive: true });
+});
+
 window.ddCelebrateSale = function (closerName) {
     var overlay = document.getElementById('ddSaleCelebration');
     var bubbleHolder = document.getElementById('ddSaleBubbles');
@@ -1289,7 +1541,10 @@ window.ddCelebrateSale = function (closerName) {
     var nameEl = document.getElementById('ddSaleCloserName');
     if (!overlay || !bubbleHolder || !dancerHolder || !fireworkHolder || !banner || !nameEl) return;
 
+    closerName = closerName || 'Closer';
     nameEl.textContent = closerName;
+    window.ddPlaySaleFireworkSound(true);
+    window.ddSpeakSaleClosed(closerName);
 
     banner.style.animation = 'none';
     void banner.offsetWidth;
@@ -1327,6 +1582,7 @@ window.ddCelebrateSale = function (closerName) {
     var fwColors = ['#34f5c5', '#ffb020', '#ffffff', '#7de8cf'];
 
     function fireworkBurst() {
+        window.ddPlaySaleFireworkSound(false);
         var originX = 15 + Math.random() * 70;
         var originY = 15 + Math.random() * 45;
 

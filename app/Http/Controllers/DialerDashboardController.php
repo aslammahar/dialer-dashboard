@@ -12,10 +12,13 @@ class DialerDashboardController extends Controller
 protected array $editorEmails = [
     'm.muzammil@jsonscommunication.com',
     'fazail@jsonscommunications.com',
+    'fazail@jsonscommunication.com',
     'ubaid.khan@jsonscommunication.com',
     'hussamjanjua@jsons.com',
     'furqankashif@jsons.com',
     'sheikh.noman@jsonscommunication.com',
+    'sheikh.nouman@jsonscommunication.com',
+    'm.muzamil@jsonscommunication.com',
 ];
     public function index(Request $request)
 {
@@ -252,13 +255,60 @@ public function broadcastAnnouncement(Request $request)
     $message = $request->input('message');
     
     if ($message) {
-        // Save the announcement to cache for 1 minute (60 seconds)
-        // Note: Cache::put in newer Laravel uses seconds, older uses minutes. Assuming minutes?
-        // Wait, Laravel 5.8+ uses seconds for TTL. Let's use now()->addMinute() for safety across versions.
-        \Illuminate\Support\Facades\Cache::put('dashboard_announcement', $message, now()->addMinute());
+        \Illuminate\Support\Facades\Cache::put('dashboard_announcement', $this->announcementPayload($message), now()->addMinute());
     }
 
     return response()->json(['success' => true]);
+}
+
+protected function announcementPayload(string $message): array
+{
+    $user = auth()->user();
+    $email = strtolower($user->email ?? '');
+    $presenters = [
+        'hussamjanjua@jsons.com' => [
+            'name' => 'Hussam Janjua',
+            'image' => 'images/announcements/hussamjanjua.jpg',
+        ],
+        'sheikh.noman@jsonscommunication.com' => [
+            'name' => 'Sheikh Nouman',
+            'image' => 'images/announcements/sheikh_nouman.jpg',
+        ],
+        'sheikh.nouman@jsonscommunication.com' => [
+            'name' => 'Sheikh Nouman',
+            'image' => 'images/announcements/sheikh_nouman.jpg',
+        ],
+        'fazail@jsonscommunications.com' => [
+            'name' => 'Fazail',
+            'image' => 'images/announcements/fazail.jpg',
+        ],
+        'fazail@jsonscommunication.com' => [
+            'name' => 'Fazail',
+            'image' => 'images/announcements/fazail.jpg',
+        ],
+        'm.muzammil@jsonscommunication.com' => [
+            'name' => 'M. Muzammil',
+            'image' => 'images/announcements/m_muzammil.jpg',
+        ],
+        'm.muzamil@jsonscommunication.com' => [
+            'name' => 'M. Muzammil',
+            'image' => 'images/announcements/m_muzammil.jpg',
+        ],
+    ];
+
+    $presenter = $presenters[$email] ?? [
+        'name' => $user->name ?? $email,
+        'image' => null,
+    ];
+
+    return [
+        'id' => (string) \Illuminate\Support\Str::uuid(),
+        'created_at' => now()->toIso8601String(),
+        'message' => $message,
+        'author_name' => $presenter['name'],
+        'author_email' => $email,
+        'author_image' => $presenter['image'] ? asset($presenter['image']) : null,
+    ];
 }
 
 public function publicIndex(Request $request, string $token)
