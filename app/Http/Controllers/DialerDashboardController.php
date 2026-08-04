@@ -105,7 +105,9 @@ $mergedTeams        = $salesService->mergeDialerStatsIntoTeams($teamBoard['teams
 $teamsSummary       = $salesService->teamsSummaryTable($mergedTeams);
 $teamsSummaryTotals = $salesService->teamsSummaryTotals($teamsSummary);
 $clientsSummary     = $salesService->clientsSummaryTable($todayNY, $todayNY);
-$carriersSummary    = $salesService->carriersSummaryTable($todayNY, $todayNY);
+$carriersData       = $salesService->carriersSummaryTable($todayNY, $todayNY);
+$carriersSummary    = $carriersData['rows'];
+$carriersClients    = $carriersData['clients'];
 $monthlyPerformanceTotals = $salesService->monthlyPerformanceTotals($monthlyPerformance);
 
     return view('dialer-dashboard.index', [
@@ -134,6 +136,7 @@ $monthlyPerformanceTotals = $salesService->monthlyPerformanceTotals($monthlyPerf
         'teamsSummaryTotals' => $teamsSummaryTotals,
 'clientsSummary'  => $clientsSummary,
 'carriersSummary' => $carriersSummary,
+'carriersClients' => $carriersClients,
 'monthlyPerformanceTotals' => $monthlyPerformanceTotals,
 
 
@@ -164,7 +167,9 @@ public function liveBoard(Request $request)
     $activeStats      = $salesService->activeClosersDialerStats($leaderboard);
     $closerCounts     = $salesService->closerCounts();
     $clientsSummary   = $salesService->clientsSummaryTable($todayNY, $todayNY);
-    $carriersSummary  = $salesService->carriersSummaryTable($todayNY, $todayNY);
+    $carriersData     = $salesService->carriersSummaryTable($todayNY, $todayNY);
+    $carriersSummary  = $carriersData['rows'];
+    $carriersClients  = $carriersData['clients'];
 
     $teamBoard          = $salesService->teamWiseClosersBoard($todayNY, $todayNY);
     $mergedTeams        = $salesService->mergeDialerStatsIntoTeams($teamBoard['teams'], $leaderboard);
@@ -188,6 +193,7 @@ public function liveBoard(Request $request)
         'closer_counts'              => $closerCounts,
         'clients_summary'            => $clientsSummary,
         'carriers_summary'           => $carriersSummary,
+        'carriers_clients'           => $carriersClients,
         'teams_summary'              => $teamsSummary,
         'teams_summary_totals'       => $teamsSummaryTotals,
         'monthly_performance'        => $monthlyPerformance,

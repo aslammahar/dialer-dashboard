@@ -138,11 +138,13 @@ public function monthlyPerformanceRanking(?string $month = null, array $dialerLe
     // Real attendance-based working days per closer this month — NOT
     // derived from sales entries (a closer can be present 4 days but only
     // sell on 1-2 of them; "Working Days" must reflect attendance).
-    $workingDaysByCloser = \App\Models\ClosersAttendance::where('status', 'present')
+    $workingDaysByCloser = \App\Models\ClosersAttendance::whereIn('status', ['present', 'half_day'])
         ->whereBetween('attendance_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
         ->get()
         ->groupBy('sales_closer_id')
-        ->map(fn ($rows) => $rows->count())
+        ->map(function ($rows) {
+            return $rows->sum(fn ($r) => $r->status === 'half_day' ? 0.5 : 1.0);
+        })
         ->all();
 
     $exactLookup = [];
@@ -468,18 +470,20 @@ public function teamWiseClosersBoard(?string $from = null, ?string $to = null): 
     $from = $from ?? now('America/New_York')->startOfMonth()->toDateString();
     $to   = $to ?? now('America/New_York')->toDateString();
 
-    $presentCloserIds = \App\Models\ClosersAttendance::where('status', 'present')
+    $presentCloserIds = \App\Models\ClosersAttendance::whereIn('status', ['present', 'half_day'])
         ->whereBetween('attendance_date', [$from, $to])
         ->pluck('sales_closer_id')
         ->unique()
         ->toArray();
 
     // Attendance-based working days per closer (same as monthlyPerformanceRanking)
-    $workingDaysByCloser = \App\Models\ClosersAttendance::where('status', 'present')
+    $workingDaysByCloser = \App\Models\ClosersAttendance::whereIn('status', ['present', 'half_day'])
         ->whereBetween('attendance_date', [$from, $to])
         ->get()
         ->groupBy('sales_closer_id')
-        ->map(fn ($rows) => $rows->count())
+        ->map(function ($rows) {
+            return $rows->sum(fn ($r) => $r->status === 'half_day' ? 0.5 : 1.0);
+        })
         ->all();
 
     $entries = DailySalesEntry::with(['closer.team', 'team', 'client'])
@@ -1103,7 +1107,11 @@ public function teamsSummaryTable(array $mergedTeams): array
         
         if ($teamModel) {
             $totalClosers = \App\Models\SalesCloser::where('sales_team_id', $teamModel->id)->where('active', true)->count();
-            $activeClosersCount = \App\Models\SalesCloser::where('sales_team_id', $teamModel->id)->whereIn('id', $activeIds)->count();
+            $teamAttendances = \App\Models\ClosersAttendance::whereDate('attendance_date', now('America/New_York')->toDateString())
+                ->whereIn('status', ['present', 'half_day'])
+                ->whereHas('closer', fn ($q) => $q->where('sales_team_id', $teamModel->id))
+                ->get();
+            $activeClosersCount = $teamAttendances->sum(fn ($a) => $a->status === 'half_day' ? 0.5 : 1.0);
         }
 
         if ($totalClosers === 0) {
@@ -1237,42 +1245,67 @@ public function clientsSummaryTable(?string $from = null, ?string $to = null): a
 }
 
 /**
- * Dashboard "Carriers" summary — same shape as clients.
+ * Dashboard "Carriers" summary — includes per-client breakdown.
  */
 public function carriersSummaryTable(?string $from = null, ?string $to = null): array
 {
     $from = $from ?? now('America/New_York')->startOfMonth()->toDateString();
     $to   = $to ?? now('America/New_York')->toDateString();
 
-    $entries = DailySalesEntry::with('carrier')
+    $entries = DailySalesEntry::with(['carrier', 'client'])
         ->whereBetween('entry_date', [$from, $to])
         ->whereNotNull('sales_carrier_id')
         ->get();
 
-    return $entries
+    // Collect all distinct client names that have any approved entries
+    $allClients = $entries
+        ->where('status', 'approved')
+        ->map(fn ($e) => optional($e->client)->name)
+        ->filter()
+        ->unique()
+        ->sort()
+        ->values()
+        ->all();
+
+    $rows = $entries
         ->groupBy('sales_carrier_id')
-        ->map(function ($rows) {
-            $carrier = $rows->first()->carrier;
-            $approved = $rows->where('status', 'approved');
-            $levelCount = $approved->where('sale_type', 'level')->count();
+        ->map(function ($rows) use ($allClients) {
+            $carrier      = $rows->first()->carrier;
+            $approved     = $rows->where('status', 'approved');
+            $levelCount   = $approved->where('sale_type', 'level')->count();
             $approvedCount = $approved->count();
-            $target = $carrier->target ?? 0;
+            $target       = $carrier->target ?? 0;
+
+            // Per-client approved count for this carrier
+            $clientBreakdown = [];
+            foreach ($approved as $entry) {
+                $cName = optional($entry->client)->name;
+                if ($cName) {
+                    $clientBreakdown[$cName] = ($clientBreakdown[$cName] ?? 0) + 1;
+                }
+            }
 
             return [
-                'carrier'       => $carrier->name ?? 'Unknown',
-                'underwriting'  => $rows->where('status', 'pending')->count(),
-                'approved'      => $approvedCount,
-                'level'         => $levelCount,
-                'gi'            => $approved->where('sale_type', 'gi')->count(),
-                'level_pct'     => $approvedCount > 0 ? round(($levelCount / $approvedCount) * 100) : 0,
-                'target'        => $target,
-                'left'          => max($target - $approvedCount, 0),
-                'avg_pre'       => $approved->avg('avg_pre') ? round($approved->avg('avg_pre'), 2) : 0,
+                'carrier'          => $carrier->name ?? 'Unknown',
+                'client_breakdown' => $clientBreakdown,
+                'underwriting'     => $rows->where('status', 'pending')->count(),
+                'approved'         => $approvedCount,
+                'level'            => $levelCount,
+                'gi'               => $approved->where('sale_type', 'gi')->count(),
+                'level_pct'        => $approvedCount > 0 ? round(($levelCount / $approvedCount) * 100) : 0,
+                'target'           => $target,
+                'left'             => max($target - $approvedCount, 0),
+                'avg_pre'          => $approved->avg('avg_pre') ? round($approved->avg('avg_pre'), 2) : 0,
             ];
         })
         ->sortByDesc('approved')
         ->values()
         ->all();
+
+    return [
+        'rows'    => $rows,
+        'clients' => $allClients,
+    ];
 }
 
 public function attendanceMonthlySummary(?string $month = null): array
@@ -1287,29 +1320,35 @@ public function attendanceMonthlySummary(?string $month = null): array
     return $records
         ->groupBy('sales_closer_id')
         ->map(function ($rows) {
-            $closer = $rows->first()->closer;
+            $closer  = $rows->first()->closer;
+            $present = $rows->where('status', 'present')->count();
+            $halfDay = $rows->where('status', 'half_day')->count();
+            $absent  = $rows->where('status', 'absent')->count();
+            $leave   = $rows->where('status', 'leave')->count();
+            $total   = $present + ($halfDay * 0.5);
 
             return [
                 'closer'   => $closer->name ?? 'Unknown',
-                'present'  => $rows->where('status', 'present')->count(),
-                'half_day' => $rows->where('status', 'half_day')->count(),
-                'absent'   => $rows->where('status', 'absent')->count(),
-                'leave'    => $rows->where('status', 'leave')->count(),
-                'total'    => $rows->count(),
+                'present'  => $present,
+                'half_day' => $halfDay,
+                'absent'   => $absent,
+                'leave'    => $leave,
+                'total'    => $total,
             ];
         })
         ->sortBy('closer')
         ->values()
         ->all();
 }
+
 /**
- * Closers marked "present" today via attendance AND assigned to a team.
+ * Closers marked "present" or "half_day" today via attendance AND assigned to a team.
  * Unassigned closers never count as active, no matter their attendance.
  */
 public function activeClosersToday(): array
 {
     return \App\Models\ClosersAttendance::whereDate('attendance_date', now('America/New_York')->toDateString())
-        ->where('status', 'present')
+        ->whereIn('status', ['present', 'half_day'])
         ->whereHas('closer', fn ($q) => $q->whereNotNull('sales_team_id'))
         ->pluck('sales_closer_id')
         ->unique()
@@ -1319,10 +1358,15 @@ public function activeClosersToday(): array
 
 public function closerCounts(): array
 {
-    $activeIds = $this->activeClosersToday();
+    $attendances = \App\Models\ClosersAttendance::whereDate('attendance_date', now('America/New_York')->toDateString())
+        ->whereIn('status', ['present', 'half_day'])
+        ->whereHas('closer', fn ($q) => $q->whereNotNull('sales_team_id'))
+        ->get();
+
+    $activeCount = $attendances->sum(fn ($a) => $a->status === 'half_day' ? 0.5 : 1.0);
 
     return [
-        'active' => count($activeIds),
+        'active' => $activeCount,
         'total'  => \App\Models\SalesCloser::whereNotNull('sales_team_id')->count(),
     ];
 }

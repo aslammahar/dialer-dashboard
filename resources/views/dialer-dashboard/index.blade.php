@@ -137,6 +137,7 @@
     </div>
 </div>
 
+    <div style="display:none">
     <form class="dd-filters" method="GET" action="{{ route('dialer-dashboard') }}">
     @unless($isCloser)
     <div class="dd-field">
@@ -171,6 +172,8 @@
         </div>
         <button type="submit" class="dd-apply">Apply</button>
     </form>
+    </div>
+
 @if($goal['raw_target'] > 0)
     <div class="dd-track-card {{ $goal['pct'] >= 100 ? 'is-complete' : '' }}" id="ddTrackCard">
         <div class="dd-confetti" id="ddConfetti"></div>
@@ -480,7 +483,7 @@
     <div class="dd-panel-head">
         <div>
             <div class="dd-panel-title">Carriers Summary</div>
-            <div class="dd-panel-sub">Today — Approved / Level / GI / Target</div>
+            <div class="dd-panel-sub">Today — Client Breakdown / Approved / Level / GI / Target</div>
         </div>
         <a href="{{ route('sales-reports.carrier-wise') }}" class="dd-apply" style="text-decoration:none">View Full</a>
     </div>
@@ -488,7 +491,11 @@
         <table class="dd-lb-table" id="ddCarriersTable">
             <thead>
                 <tr>
-                    <th>Carrier</th><th>Approved</th><th>Level</th><th>GI</th>
+                    <th>Carrier</th>
+                    @foreach($carriersClients as $cn)
+                        <th style="color:var(--dd-accent);white-space:nowrap">{{ $cn }}</th>
+                    @endforeach
+                    <th>Approved</th><th>Level</th><th>GI</th>
                     <th>Level %</th><th>Target</th><th>Left</th><th>Avg Pre</th>
                 </tr>
             </thead>
@@ -496,7 +503,10 @@
                 @forelse($carriersSummary as $c)
                     <tr>
                         <td>{{ $c['carrier'] }}</td>
-                        <td>{{ $c['approved'] }}</td>
+                        @foreach($carriersClients as $cn)
+                            <td>{{ $c['client_breakdown'][$cn] ?? 0 }}</td>
+                        @endforeach
+                        <td><strong>{{ $c['approved'] }}</strong></td>
                         <td>{{ $c['level'] }}</td>
                         <td>{{ $c['gi'] }}</td>
                         <td>{{ $c['level_pct'] }}%</td>
@@ -505,7 +515,7 @@
                         <td>{{ $c['avg_pre'] }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="9" style="text-align:center;color:var(--dd-text-muted);padding:16px">No carrier data yet.</td></tr>
+                    <tr><td colspan="{{ 8 + count($carriersClients) }}" style="text-align:center;color:var(--dd-text-muted);padding:16px">No carrier data yet.</td></tr>
                 @endforelse
             </tbody>
 @if(count($carriersSummary))
@@ -516,7 +526,10 @@
     @endphp
     <tr>
         <td>Total</td>
-        <td>{{ $ctApproved }}</td>
+        @foreach($carriersClients as $cn)
+            <td>{{ array_sum(array_map(fn($c) => $c['client_breakdown'][$cn] ?? 0, $carriersSummary)) }}</td>
+        @endforeach
+        <td><strong>{{ $ctApproved }}</strong></td>
         <td>{{ $ctLevel }}</td>
         <td>{{ array_sum(array_column($carriersSummary, 'gi')) }}</td>
         <td>{{ $ctApproved > 0 ? round(($ctLevel / $ctApproved) * 100) : 0 }}%</td>
@@ -529,6 +542,7 @@
         </table>
     </div>
 </div>
+
     <div class="dd-grid">
         <div class="dd-panel">
     <div class="dd-panel-head">
@@ -759,10 +773,14 @@
         '</tr>';
     }
 
-    function renderCarrierRow(c) {
+    function renderCarrierRow(c, clients) {
+        var clientCols = (clients || []).map(function(cn) {
+            return '<td>' + ((c.client_breakdown && c.client_breakdown[cn]) ? c.client_breakdown[cn] : 0) + '</td>';
+        }).join('');
         return '<tr>' +
             '<td>' + c.carrier + '</td>' +
-            '<td>' + c.approved + '</td>' +
+            clientCols +
+            '<td><strong>' + c.approved + '</strong></td>' +
             '<td>' + c.level + '</td>' +
             '<td>' + c.gi + '</td>' +
             '<td>' + c.level_pct + '%</td>' +
@@ -1060,18 +1078,38 @@
                 // Carriers Summary
                 var carriersTable = document.getElementById('ddCarriersTable');
                 if (carriersTable) {
+                    var clients = data.carriers_clients || [];
+                    var colSpan = 8 + clients.length;
                     var caBody = carriersTable.querySelector('tbody');
                     caBody.innerHTML = data.carriers_summary.length === 0
-                        ? '<tr><td colspan="8" style="text-align:center;color:var(--dd-text-muted);padding:16px">No carrier data yet.</td></tr>'
-                        : data.carriers_summary.map(renderCarrierRow).join('');
+                        ? '<tr><td colspan="' + colSpan + '" style="text-align:center;color:var(--dd-text-muted);padding:16px">No carrier data yet.</td></tr>'
+                        : data.carriers_summary.map(function(c) { return renderCarrierRow(c, clients); }).join('');
+
+                    // Update thead client columns
+                    var thead = carriersTable.querySelector('thead tr');
+                    if (thead) {
+                        var baseHeaders = '<th>Carrier</th>';
+                        clients.forEach(function(cn) {
+                            baseHeaders += '<th style="color:var(--dd-accent);white-space:nowrap">' + cn + '</th>';
+                        });
+                        baseHeaders += '<th>Approved</th><th>Level</th><th>GI</th><th>Level %</th><th>Target</th><th>Left</th><th>Avg Pre</th>';
+                        thead.innerHTML = baseHeaders;
+                    }
 
                     var caTf = carriersTable.querySelector('tfoot tr');
                     if (caTf && data.carriers_summary.length > 0) {
                         var ctApproved = sum(data.carriers_summary, 'approved');
                         var ctLevel = sum(data.carriers_summary, 'level');
+                        var clientTotals = clients.map(function(cn) {
+                            var t = data.carriers_summary.reduce(function(acc, c) {
+                                return acc + ((c.client_breakdown && c.client_breakdown[cn]) ? c.client_breakdown[cn] : 0);
+                            }, 0);
+                            return '<td>' + t + '</td>';
+                        }).join('');
                         caTf.innerHTML =
                             '<td>Total</td>' +
-                            '<td>' + ctApproved + '</td>' +
+                            clientTotals +
+                            '<td><strong>' + ctApproved + '</strong></td>' +
                             '<td>' + ctLevel + '</td>' +
                             '<td>' + sum(data.carriers_summary, 'gi') + '</td>' +
                             '<td>' + (ctApproved > 0 ? Math.round((ctLevel / ctApproved) * 100) : 0) + '%</td>' +
