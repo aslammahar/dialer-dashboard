@@ -88,11 +88,13 @@ if ($isCloser) {
     // Live sales board + monthly goal + team boxes — pulled from our own
     // DailySalesEntry table (see SalesService), no more hardcoded numbers.
     $salesService      = app(SalesService::class);
+    $monthlyPerformanceMonth = $this->selectedPerformanceMonth($request);
+    $monthlyPerformanceLabel = $this->performanceMonthLabel($monthlyPerformanceMonth);
 
 $dailyBoard         = $salesService->dailyBoard($todayNY);
 $dailyBoard         = $salesService->mergeDialerStats($dailyBoard, $leaderboard);
 $dailyBoardTotals   = $salesService->dailyBoardTotals($dailyBoard);
-$monthlyPerformance = $salesService->monthlyPerformanceRanking(null, $leaderboard);
+$monthlyPerformance = $salesService->monthlyPerformanceRanking($monthlyPerformanceMonth, $leaderboard);
 $avgCallsPerSale    = $salesService->avgCallsPerSale($dailyBoardTotals);
 $goal               = $salesService->monthlyGoal();
 $teamBoxes          = $salesService->teamBoxes();
@@ -122,6 +124,8 @@ $monthlyPerformanceTotals = $salesService->monthlyPerformanceTotals($monthlyPerf
         'dailyBoard'        => $dailyBoard,
         'dailyBoardTotals'  => $dailyBoardTotals,
         'monthlyPerformance' => $monthlyPerformance,
+        'monthlyPerformanceMonth' => $monthlyPerformanceMonth,
+        'monthlyPerformanceLabel' => $monthlyPerformanceLabel,
         'avgCallsPerSale' => $avgCallsPerSale,
         'goal'              => $goal,
         'canEdit'           => $canEdit,
@@ -147,6 +151,7 @@ public function liveBoard(Request $request)
 {
     $salesService = app(SalesService::class);
     $todayNY      = now('America/New_York')->toDateString();
+    $monthlyPerformanceMonth = $this->selectedPerformanceMonth($request);
 
     $leaderboard = [];
     try {
@@ -176,7 +181,7 @@ public function liveBoard(Request $request)
     $teamsSummary       = $salesService->teamsSummaryTable($mergedTeams);
     $teamsSummaryTotals = $salesService->teamsSummaryTotals($teamsSummary);
 
-    $monthlyPerformance = $salesService->monthlyPerformanceRanking(null, $leaderboard);
+    $monthlyPerformance = $salesService->monthlyPerformanceRanking($monthlyPerformanceMonth, $leaderboard);
     $monthlyPerformanceTotals = $salesService->monthlyPerformanceTotals($monthlyPerformance);
 
     $latestApproved = \App\Models\DailySalesEntry::with('closer.team')
@@ -198,11 +203,38 @@ public function liveBoard(Request $request)
         'teams_summary_totals'       => $teamsSummaryTotals,
         'monthly_performance'        => $monthlyPerformance,
         'monthly_performance_totals' => $monthlyPerformanceTotals,
+        'monthly_performance_month'  => $monthlyPerformanceMonth,
+        'monthly_performance_label'  => $this->performanceMonthLabel($monthlyPerformanceMonth),
         'latest_id'                  => $latestApproved->id ?? null,
         'latest_closer'              => $latestApproved->closer->name ?? null,
         'team_overtake'              => $teamOvertake,
         'announcement'               => \Illuminate\Support\Facades\Cache::get('dashboard_announcement'),
     ]);
+}
+
+protected function selectedPerformanceMonth(Request $request): string
+{
+    $month = trim((string) $request->query('performance_month', ''));
+    $currentMonth = now('America/New_York')->startOfMonth();
+
+    if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
+        return $currentMonth->format('Y-m');
+    }
+
+    try {
+        $selectedMonth = \Carbon\Carbon::createFromFormat('Y-m-d', $month . '-01', 'America/New_York')->startOfMonth();
+    } catch (\Throwable $e) {
+        return $currentMonth->format('Y-m');
+    }
+
+    return $selectedMonth->gt($currentMonth)
+        ? $currentMonth->format('Y-m')
+        : $selectedMonth->format('Y-m');
+}
+
+protected function performanceMonthLabel(string $month): string
+{
+    return \Carbon\Carbon::createFromFormat('Y-m-d', $month . '-01', 'America/New_York')->format('F Y');
 }
 
 protected function teamOvertakeEvent(array $teamsSummary, ?\App\Models\DailySalesEntry $latestApproved): ?array

@@ -139,6 +139,7 @@
 
     <div style="display:none">
     <form class="dd-filters" method="GET" action="{{ route('dialer-dashboard') }}">
+    <input type="hidden" name="performance_month" value="{{ $monthlyPerformanceMonth }}">
     @unless($isCloser)
     <div class="dd-field">
         <label class="dd-label">View</label>
@@ -567,8 +568,24 @@
     <div class="dd-panel-head">
         <div>
             <div class="dd-panel-title">🏆 Monthly Performance Ranking</div>
-            <div class="dd-panel-sub">Blended score: sales volume + conversion efficiency + level% — {{ now('America/New_York')->format('F Y') }}</div>
+            <div class="dd-panel-sub">Blended score: sales volume + conversion efficiency + level% — {{ $monthlyPerformanceLabel }}</div>
         </div>
+        <form method="GET" action="{{ route('dialer-dashboard') }}" class="dd-month-filter">
+            <input type="hidden" name="view" value="{{ $filters['view'] }}">
+            <input type="hidden" name="group" value="{{ $filters['group'] }}">
+            <input type="hidden" name="from" value="{{ $filters['from'] }}">
+            <input type="hidden" name="to" value="{{ $filters['to'] }}">
+            <label class="dd-label" for="ddPerformanceMonth">Month</label>
+            <input
+                type="month"
+                id="ddPerformanceMonth"
+                name="performance_month"
+                class="dd-input dd-month-input"
+                value="{{ $monthlyPerformanceMonth }}"
+                max="{{ now('America/New_York')->format('Y-m') }}"
+                onchange="this.form.submit()"
+            >
+        </form>
     </div>
     <div class="dd-lb-scroll">
         <table class="dd-lb-table" id="ddMonthlyTable">
@@ -627,7 +644,7 @@
                 @empty
                     <tr>
                         <td colspan="14" style="text-align:center;color:var(--dd-text-muted);padding:20px">
-                            No sales data yet this month.
+                            No sales data yet for this month.
                         </td>
                     </tr>
                 @endforelse
@@ -741,7 +758,7 @@
     var lastLatestId = null;
     var lastTeamOvertakeId = null;
     var lastAnnouncement = null;
-    var pollUrl = @json(route('dialer-dashboard.live-board'));
+    var pollUrl = @json(route('dialer-dashboard.live-board', ['performance_month' => $monthlyPerformanceMonth]));
     var firstRun = true;
 
     function renderBoardRow(row) {
@@ -1160,7 +1177,7 @@
                 if (monthlyTable && data.monthly_performance) {
                     var mBody = monthlyTable.querySelector('tbody');
                     mBody.innerHTML = data.monthly_performance.length === 0
-                        ? '<tr><td colspan="14" style="text-align:center;color:var(--dd-text-muted);padding:20px">No sales data yet this month.</td></tr>'
+                        ? '<tr><td colspan="14" style="text-align:center;color:var(--dd-text-muted);padding:20px">No sales data yet for this month.</td></tr>'
                         : data.monthly_performance.map(function(p, idx){ return renderMonthlyRow(p, idx + 1); }).join('');
 
                     var mTf = monthlyTable.querySelector('tfoot tr');

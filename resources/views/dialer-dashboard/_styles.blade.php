@@ -83,6 +83,8 @@
     .dd-apply{align-self:flex-end;background:var(--dd-accent);color:#06231b;border:none;border-radius:9px;
         padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--dd-font-body)}
     .dd-apply:hover{filter:brightness(1.08)}
+    .dd-month-filter{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .dd-month-input{min-width:150px}
 
    .dd-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
     .dd-stat-card{background:var(--dd-surface);border:1px solid var(--dd-border);border-radius:14px;padding:18px;position:relative;overflow:hidden}
