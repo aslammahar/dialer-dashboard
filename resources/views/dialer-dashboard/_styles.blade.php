@@ -38,6 +38,9 @@
     .dd-nyclock{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dd-accent);
         background:var(--dd-surface);border:1px solid rgba(52,245,197,.25);padding:7px 12px;border-radius:999px;
         font-family:var(--dd-font-mono)}
+    .dd-shift-timer{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dd-gold);
+        background:var(--dd-surface);border:1px solid rgba(255,176,32,.24);padding:7px 12px;border-radius:999px;
+        font-family:var(--dd-font-mono)}
     .dd-update-btn{display:inline-flex;align-items:center;gap:7px;background:var(--dd-accent);color:#06231b;
         border:none;border-radius:999px;padding:8px 15px;font-size:12.5px;font-weight:600;cursor:pointer;
         font-family:var(--dd-font-body);transition:filter .15s ease}

@@ -91,9 +91,9 @@
         </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <div class="dd-nyclock" id="ddNyClock">
+        <div class="dd-shift-timer" id="ddShiftTimer">
             <span class="dd-dot"></span>
-            <span id="ddNyClockText">New York — --:--:-- </span>
+            <span id="ddShiftTimerText">Office Remaining Time — --:--:--</span>
         </div>
         @unless($isCloser)
     @if($canEdit)
@@ -673,15 +673,50 @@
 <script>
 // Live New York clock — dialer's real-time reference, shown top-right of the dashboard
 (function(){
-    var el = document.getElementById('ddNyClockText');
-    if (!el) return;
+    var shiftEl = document.getElementById('ddShiftTimerText');
+    if (!shiftEl) return;
+
+    function formatTimeLeft(ms){
+        if (ms <= 0) return 'Remaining — 00:00:00';
+        var totalSeconds = Math.floor(ms / 1000);
+        var hours = Math.floor(totalSeconds / 3600);
+        var minutes = Math.floor((totalSeconds % 3600) / 60);
+        var seconds = totalSeconds % 60;
+        return 'Remaining — ' + String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+    }
+
+    function getShiftEndTime(now){
+        var startHour = 20;
+        var startMinute = 30;
+        var endHour = 7;
+        var endMinute = 0;
+        var start = new Date(now);
+        start.setHours(startHour, startMinute, 0, 0);
+        var end = new Date(now);
+        end.setHours(endHour, endMinute, 0, 0);
+
+        var nowMinutes = now.getHours() * 60 + now.getMinutes();
+        var startMinutes = startHour * 60 + startMinute;
+        var endMinutes = endHour * 60 + endMinute;
+
+        if (nowMinutes >= startMinutes) {
+            end.setDate(end.getDate() + 1);
+        } else if (nowMinutes < endMinutes) {
+            start.setDate(start.getDate() - 1);
+        } else {
+            end.setDate(end.getDate() + 1);
+        }
+
+        return end;
+    }
+
     function tick(){
-        var formatted = new Intl.DateTimeFormat('en-US', {
-            timeZone: 'America/New_York',
-            hour: '2-digit', minute: '2-digit', second: '2-digit',
-            hour12: true, month: 'short', day: 'numeric'
-        }).format(new Date());
-        el.textContent = 'New York — ' + formatted;
+        var now = new Date();
+        if (shiftEl) {
+            var shiftEnd = getShiftEndTime(now);
+            var remainingMs = shiftEnd.getTime() - now.getTime();
+            shiftEl.textContent = 'Office Remaining Time — ' + formatTimeLeft(remainingMs).replace('Remaining — ', '');
+        }
     }
     tick();
     setInterval(tick, 1000);

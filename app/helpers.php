@@ -1,13 +1,13 @@
-<?php 
+<?php
 
-function flash($title=null, $message=null)
-{
-    $flash = app('App\Http\Flash');
-    if (func_num_args()==0) {
-        return $flash;
+if (!function_exists('flash')) {
+    function flash($title = null, $message = null)
+    {
+        $flash = app('App\Http\Flash');
+        if (func_num_args() == 0) {
+            return $flash;
+        }
+
+        return $flash->info($title, $message);
     }
-    return $flash->info($title, $message);
 }
-
-
-?>
