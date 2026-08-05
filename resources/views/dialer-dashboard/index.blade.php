@@ -121,6 +121,9 @@
 <a href="{{ route('dialer-leaderboard') }}" class="dd-readonly-badge" style="text-decoration:none">
     <i class="ti ti-list-numbers"></i> Leaderboard
 </a>
+{{-- <a href="{{ route('dialer-sc-report') }}" class="dd-readonly-badge" style="text-decoration:none">
+    <i class="ti ti-report-analytics"></i> SC's Report
+</a> --}}
 @if($canEdit)
 <a href="{{ route('attendance-closer.index') }}" class="dd-readonly-badge" style="text-decoration:none">
     <i class="ti ti-calendar-check"></i> Mark Attendance

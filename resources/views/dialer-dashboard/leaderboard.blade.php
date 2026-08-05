@@ -29,6 +29,9 @@
             <a href="{{ route('dialer-dashboard') }}" class="dd-readonly-badge" style="text-decoration:none">
                 <i class="ti ti-arrow-left"></i> Back to Dashboard
             </a>
+            {{-- <a href="{{ route('dialer-sc-report') }}" class="dd-readonly-badge" style="text-decoration:none">
+                <i class="ti ti-report-analytics"></i> SC's Report
+            </a> --}}
             <div class="dd-sync">
                 <span class="dd-dot"></span>
                 Synced hourly · last sync {{ $lastSyncedAt ?? 'pending first run' }}

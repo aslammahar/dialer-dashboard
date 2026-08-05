@@ -442,4 +442,30 @@ if ($isCloser) {
         'isCloser'          => $isCloser,
     ]);
 }
+
+    public function scReportPage(Request $request)
+    {
+        $isCloser = auth()->check() && auth()->user()->type === 'Closer';
+
+        $defaultFrom = now('America/New_York')->startOfMonth()->toDateString();
+        $defaultTo   = now('America/New_York')->toDateString();
+
+        $filters = [
+            'from' => $request->get('from', $defaultFrom),
+            'to'   => $request->get('to', $defaultTo),
+        ];
+
+        $salesService = app(SalesService::class);
+        $scData       = $salesService->scReportData($filters);
+
+        return view('dialer-dashboard.sc-report', [
+            'filters'      => $filters,
+            'reportRows'   => $scData['rows'],
+            'totals'       => $scData['totals'],
+            'averages'     => $scData['averages'],
+            'lastSyncedAt' => cache('dialer_last_synced_at'),
+            'isCloser'     => $isCloser,
+        ]);
+    }
 }
+

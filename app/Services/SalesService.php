@@ -1540,4 +1540,206 @@ public function closerCarrierMatrix(?string $from = null, ?string $to = null, ar
 
     return ['rows' => $rows, 'carriers' => $carrierNames];
 }
+
+    /**
+     * Senior Closer (SC) Report — calculates Avatar vs JC call breakdown,
+     * login hours, sales submissions, approved sales, approval ratios,
+     * and approved conversion ratios for every closer.
+     */
+    public function scReportData(array $filters): array
+    {
+        $from = $filters['from'] ?? now('America/New_York')->startOfMonth()->toDateString();
+        $to   = $filters['to'] ?? now('America/New_York')->toDateString();
+
+        $closers = \App\Models\SalesCloser::with('team')->where('active', true)->orderBy('name')->get();
+        if ($closers->isEmpty()) {
+            $closers = \App\Models\SalesCloser::with('team')->orderBy('name')->get();
+        }
+
+        $dialerLeaderboard = [];
+        try {
+            $dialerApi = app(\App\Services\DialerApiService::class);
+            $dialerLeaderboard = $dialerApi->leaderboard(['from' => $from, 'to' => $to]);
+        } catch (\Throwable $e) {
+            // Fallback gracefully
+        }
+
+        $exactLookup = [];
+        $firstNameLookup = [];
+        foreach ($dialerLeaderboard as $agent) {
+            $fullName = strtolower(trim($agent['name']));
+            $firstName = strtolower(trim(explode(' ', $agent['name'])[0]));
+            $exactLookup[$fullName] = $agent;
+            if (! isset($firstNameLookup[$firstName]) || ($agent['calls'] ?? 0) > ($firstNameLookup[$firstName]['calls'] ?? 0)) {
+                $firstNameLookup[$firstName] = $agent;
+            }
+        }
+
+        $reportingDataByCloser = \App\Models\ReportingData::whereBetween('report_date', [$from, $to])
+            ->get()
+            ->groupBy(fn ($r) => strtolower(trim($r->name)));
+
+        $closedCalls = \Illuminate\Support\Facades\DB::table('closed_calls')
+            ->whereBetween(\Illuminate\Support\Facades\DB::raw('DATE(created_at)'), [$from, $to])
+            ->get();
+
+        $salesEntries = \App\Models\DailySalesEntry::whereBetween('entry_date', [$from, $to])->get();
+
+        $rows = [];
+
+        foreach ($closers as $closer) {
+            $closerName = strtolower(trim($closer->name));
+            $firstName  = strtolower(trim(explode(' ', $closer->name)[0]));
+
+            $matchDialer = $exactLookup[$closerName] ?? $firstNameLookup[$firstName] ?? null;
+            $repRecords  = $reportingDataByCloser->get($closerName) ?? collect();
+
+            if ($repRecords->isNotEmpty()) {
+                $avatarCalls  = (int) $repRecords->sum('avatar_xfer');
+                $jcCalls      = (int) $repRecords->sum('jcs_xfers');
+                $loginSeconds = (int) $repRecords->sum('talktime_seconds');
+
+                $avatarSubmitted = (int) $repRecords->sum('avatar_xfer_submitted_sales');
+                $avatarApproved  = (int) $repRecords->sum('avatar_xfer_approved_sales');
+                $jcSubmitted     = (int) $repRecords->sum('jcs_submitted');
+                $jcApproved      = (int) $repRecords->sum('jcs_approved');
+
+                $avgTalkSec = (int) ($repRecords->avg('avg_talktime_seconds') ?: 0);
+                $avatarAvgTalkTime = $this->secondsToHms($avgTalkSec);
+                $jcAvgTalkTime     = $this->secondsToHms($avgTalkSec);
+            } else {
+                $dialerCalls = $matchDialer['calls'] ?? 0;
+                $dialerTime  = $matchDialer['time'] ?? '0:00:00';
+                $dialerAvg   = $matchDialer['avg_talk_time'] ?? '0:00:00';
+
+                $loginSeconds = $this->hmsToSeconds($dialerTime);
+
+                $closerSales = $salesEntries->where('sales_closer_id', $closer->id);
+                $closerApprovedCount = $closerSales->where('status', 'approved')->count();
+                $closerTotalCount    = $closerSales->count();
+
+                $ccForCloser = $closedCalls->filter(function ($cc) use ($closer) {
+                    return $cc->closer_id == $closer->id || strcasecmp($cc->junior_closer_name ?? '', $closer->name) === 0;
+                });
+
+                $avatarSubmitted = $ccForCloser->filter(function ($cc) use ($closer) {
+                    return strcasecmp($cc->junior_closer_name ?? '', $closer->name) === 0 || empty($cc->junior_closer_name);
+                })->count();
+
+                $avatarApproved = $ccForCloser->filter(function ($cc) use ($closer) {
+                    return (strcasecmp($cc->junior_closer_name ?? '', $closer->name) === 0 || empty($cc->junior_closer_name))
+                        && in_array(strtolower($cc->status ?? ''), ['approved', 'funded', 'policy issued', 'active']);
+                })->count();
+
+                $jcSubmitted = $ccForCloser->filter(function ($cc) use ($closer) {
+                    return ! empty($cc->junior_closer_name) && strcasecmp($cc->junior_closer_name ?? '', $closer->name) !== 0;
+                })->count();
+
+                $jcApproved = $ccForCloser->filter(function ($cc) use ($closer) {
+                    return ! empty($cc->junior_closer_name) && strcasecmp($cc->junior_closer_name ?? '', $closer->name) !== 0
+                        && in_array(strtolower($cc->status ?? ''), ['approved', 'funded', 'policy issued', 'active']);
+                })->count();
+
+                if ($closerTotalCount > 0 && $avatarSubmitted === 0) {
+                    $avatarSubmitted = $closerTotalCount;
+                    $avatarApproved  = $closerApprovedCount;
+                }
+
+                $avatarCalls = $dialerCalls;
+                $jcCalls     = 0;
+
+                $avatarAvgTalkTime = ($dialerAvg !== '-') ? $dialerAvg : '0:00:00';
+                $jcAvgTalkTime     = '0:00:00';
+            }
+
+            $avatarRatio = $avatarSubmitted > 0 ? round(($avatarApproved / $avatarSubmitted) * 100, 1) : 0;
+            $jcRatio     = $jcSubmitted > 0 ? round(($jcApproved / $jcSubmitted) * 100, 1) : 0;
+
+            $avatarConv = $avatarApproved > 0 ? round($avatarCalls / $avatarApproved, 1) : 0;
+            $jcConv     = $jcApproved > 0 ? round($jcCalls / $jcApproved, 1) : 0;
+
+            $rows[] = [
+                'closer_id'             => $closer->id,
+                'name'                  => $closer->name,
+                'team'                  => $closer->team->name ?? '-',
+                'avatar_calls'          => $avatarCalls,
+                'jc_calls'              => $jcCalls,
+                'login_seconds'         => $loginSeconds,
+                'login_hours_formatted' => $this->secondsToHms($loginSeconds),
+                'avatar_avg_talktime'   => $avatarAvgTalkTime,
+                'jc_avg_talktime'       => $jcAvgTalkTime,
+                'avatar_submitted'      => $avatarSubmitted,
+                'avatar_approved'       => $avatarApproved,
+                'avatar_approval_ratio' => $avatarRatio,
+                'jc_submitted'          => $jcSubmitted,
+                'jc_approved'           => $jcApproved,
+                'jc_approval_ratio'     => $jcRatio,
+                'avatar_approved_conv'  => $avatarConv,
+                'jc_approved_conv'      => $jcConv,
+            ];
+        }
+
+        usort($rows, fn ($a, $b) => ($b['avatar_approved'] + $b['jc_approved']) <=> ($a['avatar_approved'] + $a['jc_approved']));
+
+        $count = count($rows);
+
+        $totalAvatarCalls     = array_sum(array_column($rows, 'avatar_calls'));
+        $totalJcCalls         = array_sum(array_column($rows, 'jc_calls'));
+        $totalLoginSeconds    = array_sum(array_column($rows, 'login_seconds'));
+        $totalAvatarSubmitted = array_sum(array_column($rows, 'avatar_submitted'));
+        $totalAvatarApproved  = array_sum(array_column($rows, 'avatar_approved'));
+        $totalJcSubmitted     = array_sum(array_column($rows, 'jc_submitted'));
+        $totalJcApproved      = array_sum(array_column($rows, 'jc_approved'));
+
+        $totals = [
+            'name'                  => 'Total',
+            'avatar_calls'          => $totalAvatarCalls,
+            'jc_calls'              => $totalJcCalls,
+            'login_hours_formatted' => $this->secondsToHms($totalLoginSeconds),
+            'avatar_avg_talktime'   => '-',
+            'jc_avg_talktime'       => '-',
+            'avatar_submitted'      => $totalAvatarSubmitted,
+            'avatar_approved'       => $totalAvatarApproved,
+            'avatar_approval_ratio' => $totalAvatarSubmitted > 0 ? round(($totalAvatarApproved / $totalAvatarSubmitted) * 100, 1) : 0,
+            'jc_submitted'          => $totalJcSubmitted,
+            'jc_approved'           => $totalJcApproved,
+            'jc_approval_ratio'     => $totalJcSubmitted > 0 ? round(($totalJcApproved / $totalJcSubmitted) * 100, 1) : 0,
+            'avatar_approved_conv'  => $totalAvatarApproved > 0 ? round($totalAvatarCalls / $totalAvatarApproved, 1) : 0,
+            'jc_approved_conv'      => $totalJcApproved > 0 ? round($totalJcCalls / $totalJcApproved, 1) : 0,
+        ];
+
+        $avgAvatarCalls     = $count > 0 ? round($totalAvatarCalls / $count, 1) : 0;
+        $avgJcCalls         = $count > 0 ? round($totalJcCalls / $count, 1) : 0;
+        $avgLoginSeconds    = $count > 0 ? intdiv($totalLoginSeconds, $count) : 0;
+        $avgAvatarSubmitted = $count > 0 ? round($totalAvatarSubmitted / $count, 1) : 0;
+        $avgAvatarApproved  = $count > 0 ? round($totalAvatarApproved / $count, 1) : 0;
+        $avgJcSubmitted     = $count > 0 ? round($totalJcSubmitted / $count, 1) : 0;
+        $avgJcApproved      = $count > 0 ? round($totalJcApproved / $count, 1) : 0;
+
+        $weightedAvatarTalkSec = $totalAvatarCalls > 0 ? intdiv(array_sum(array_map(fn ($r) => $this->hmsToSeconds($r['avatar_avg_talktime']) * $r['avatar_calls'], $rows)), $totalAvatarCalls) : 0;
+        $weightedJcTalkSec     = $totalJcCalls > 0 ? intdiv(array_sum(array_map(fn ($r) => $this->hmsToSeconds($r['jc_avg_talktime']) * $r['jc_calls'], $rows)), $totalJcCalls) : 0;
+
+        $averages = [
+            'name'                  => 'Average',
+            'avatar_calls'          => $avgAvatarCalls,
+            'jc_calls'              => $avgJcCalls,
+            'login_hours_formatted' => $this->secondsToHms($avgLoginSeconds),
+            'avatar_avg_talktime'   => $this->secondsToHms($weightedAvatarTalkSec),
+            'jc_avg_talktime'       => $this->secondsToHms($weightedJcTalkSec),
+            'avatar_submitted'      => $avgAvatarSubmitted,
+            'avatar_approved'       => $avgAvatarApproved,
+            'avatar_approval_ratio' => '-',
+            'jc_submitted'          => $avgJcSubmitted,
+            'jc_approved'           => $avgJcApproved,
+            'jc_approval_ratio'     => '-',
+            'avatar_approved_conv'  => '-',
+            'jc_approved_conv'      => '-',
+        ];
+
+        return [
+            'rows'     => $rows,
+            'totals'   => $totals,
+            'averages' => $averages,
+        ];
+    }
 }
