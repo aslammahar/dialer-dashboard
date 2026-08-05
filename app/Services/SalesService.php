@@ -311,8 +311,9 @@ public function rankedPerformersToday(array $dailyBoard): array
     }, $rows, array_keys($rows)));
 }
     /**
-     * Month-to-date approved sales + SPD (sales-per-day) progress against
-     * this month's stored target.
+     * Month-to-date approved sales progress per active closer.
+     * This matches the dashboard's team summary SPD calculation,
+     * where today’s active attendance is used as the denominator.
      */
     public function monthlyGoal(): array
 {
@@ -334,7 +335,8 @@ public function rankedPerformersToday(array $dailyBoard): array
         ->count();
 
     $daysElapsed   = max($monthStart->diffInDays(now()) + 1, 1);
-    $activeClosers = max(\App\Models\SalesCloser::where('active', true)->count(), 1);
+    $closerCounts  = $this->closerCounts();
+    $activeClosers = max($closerCounts['active'] ?? 1, 1);
 
     $currentSpd = round($approvedThisMonth / $daysElapsed / $activeClosers, 2);
     $pct        = $target->raw_target > 0
@@ -355,6 +357,20 @@ public function rankedPerformersToday(array $dailyBoard): array
         'milestone_3_label'   => $target->milestone_3_label,
     ];
 }
+
+public function todayActiveCloserSpd(): float
+{
+    $todayNY = now('America/New_York')->toDateString();
+    $approvedToday = DailySalesEntry::where('status', 'approved')
+        ->whereDate('entry_date', $todayNY)
+        ->count();
+
+    $closerCounts = $this->closerCounts();
+    $activeClosers = max($closerCounts['active'] ?? 1, 1);
+
+    return $activeClosers > 0 ? round($approvedToday / $activeClosers, 2) : 0.0;
+}
+
 /**
  * Monthly per-closer summary — mirrors the Daily Board sheet's
  * Approved/Level/GI/Level%/Avg Pre/SPD/MTD SPD columns.

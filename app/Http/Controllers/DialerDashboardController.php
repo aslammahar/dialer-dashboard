@@ -97,6 +97,7 @@ $dailyBoardTotals   = $salesService->dailyBoardTotals($dailyBoard);
 $monthlyPerformance = $salesService->monthlyPerformanceRanking($monthlyPerformanceMonth, $leaderboard);
 $avgCallsPerSale    = $salesService->avgCallsPerSale($dailyBoardTotals);
 $goal               = $salesService->monthlyGoal();
+$goal['current_spd'] = $salesService->todayActiveCloserSpd();
 $teamBoxes          = $salesService->teamBoxes();
 $allTeams           = \App\Models\SalesTeam::orderBy('name')->get();
 $closerCounts       = $salesService->closerCounts();
