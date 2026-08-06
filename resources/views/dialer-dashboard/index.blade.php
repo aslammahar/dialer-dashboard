@@ -121,9 +121,9 @@
 <a href="{{ route('dialer-leaderboard') }}" class="dd-readonly-badge" style="text-decoration:none">
     <i class="ti ti-list-numbers"></i> Leaderboard
 </a>
-<a href="{{ route('retention.dashboard') }}" class="dd-readonly-badge" style="text-decoration:none; background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); color: #34d399">
+{{-- <a href="{{ route('retention.dashboard') }}" class="dd-readonly-badge" style="text-decoration:none; background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); color: #34d399">
     <i class="ti ti-repeat"></i> Retention Dashboard
-</a>
+</a> --}}
 {{-- <a href="{{ route('dialer-sc-report') }}" class="dd-readonly-badge" style="text-decoration:none">
     <i class="ti ti-report-analytics"></i> SC's Report
 </a> --}}
