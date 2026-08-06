@@ -19,6 +19,8 @@ protected array $editorEmails = [
     'sheikh.noman@jsonscommunication.com',
     'sheikh.nouman@jsonscommunication.com',
     'm.muzamil@jsonscommunication.com',
+    'taimoorjanjua@mgmt.jsonscommunications.com',
+  
 ];
     public function index(Request $request)
 {
@@ -332,6 +334,10 @@ protected function announcementPayload(string $message): array
         'm.muzamil@jsonscommunication.com' => [
             'name' => 'M. Muzammil',
             'image' => 'images/announcements/m_muzammil.jpg',
+        ],
+        'taimoorjanjua@mgmt.jsonscommunications.com' => [
+            'name' => 'Taimoor Janjua',
+            'image' => 'images/announcements/taimorjanjua.jpg',
         ],
     ];
 

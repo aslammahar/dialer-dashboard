@@ -20,6 +20,7 @@ class SalesLookupController extends Controller
             'hussamjanjua@jsons.com',
             'furqankashif@jsons.com',
             'sheikh.noman@jsonscommunication.com',
+            'taimoorjanjua@mgmt.jsonscommunications.com',
         ]),
         403,
         'You do not have permission to make changes.'
