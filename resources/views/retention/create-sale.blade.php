@@ -90,8 +90,26 @@
         <div class="as-sub">Log a closer's retention sale for the daily board</div>
 
         @if(session('success'))
-            <div class="as-alert as-alert-success">✓ {{ session('success') }}</div>
+            <div id="saleSuccess" class="as-alert as-alert-success" style="opacity:0;transform:translateY(-20px);animation:fadeSlide 1.5s forwards;">
+                ✓ {{ session('success') }}
+            </div>
+            <script>
+                setTimeout(() => {
+                    const el = document.getElementById('saleSuccess');
+                    if (el) el.style.transition = 'opacity 0.5s';
+                    el.style.opacity = '0';
+                    setTimeout(() => el.remove(), 600);
+                }, 3000);
+            </script>
         @endif
+        <style>
+            @keyframes fadeSlide {
+                0% { opacity: 0; transform: translateY(-20px); }
+                30% { opacity: 1; transform: translateY(0); }
+                80% { opacity: 1; transform: translateY(0); }
+                100% { opacity: 0; transform: translateY(-20px); }
+            }
+        </style>
 
         @if($errors->any())
             <div class="as-alert as-alert-error">

@@ -9,6 +9,7 @@ use App\Models\SalesCloser;
 use App\Models\SalesTeam;
 use App\Models\SalesClient;
 use App\Models\SalesCarrier;
+use App\Models\ClosersAttendance;
 
 class RetentionDashboardController extends Controller
 {
@@ -23,6 +24,7 @@ class RetentionDashboardController extends Controller
         'sheikh.nouman@jsonscommunication.com',
         'm.muzamil@jsonscommunication.com',
         'taimoorjanjua@mgmt.jsonscommunications.com',
+        'aslambaig@jsons.com',
     ];
 
     public function index(Request $request)
@@ -40,8 +42,13 @@ class RetentionDashboardController extends Controller
         $teamsSummary = $service->teamsSummaryRetention($from, $to);
         $clientsSummary = $service->clientsSummaryRetention($from, $to);
 
-        $closers = SalesCloser::where('active', true)->orderBy('name')->get();
-        $teams = SalesTeam::orderBy('name')->get();
+        $retentionTeam = SalesTeam::where('name', 'LIKE', '%Retention%')->first();
+        $closersQuery = SalesCloser::where('active', true);
+        if ($retentionTeam) {
+            $closersQuery->where('sales_team_id', $retentionTeam->id);
+        }
+        $closers = $closersQuery->orderBy('name')->get();
+        $teams = $retentionTeam ? collect([$retentionTeam]) : SalesTeam::orderBy('name')->get();
         $clients = SalesClient::orderBy('name')->get();
         $carriers = SalesCarrier::orderBy('name')->get();
 
@@ -103,7 +110,12 @@ class RetentionDashboardController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $closers = SalesCloser::where('active', true)->orderBy('name')->get();
+        $retentionTeam = SalesTeam::where('name', 'LIKE', '%Retention%')->first();
+        $closersQuery = SalesCloser::where('active', true);
+        if ($retentionTeam) {
+            $closersQuery->where('sales_team_id', $retentionTeam->id);
+        }
+        $closers = $closersQuery->orderBy('name')->get();
         $clients = SalesClient::orderBy('name')->get();
         $carriers = SalesCarrier::orderBy('name')->get();
         $recentEntries = RetentionSalesEntry::with(['closer', 'client', 'carrier'])
@@ -333,17 +345,69 @@ class RetentionDashboardController extends Controller
             ];
         }
 
+        $retentionTeam = SalesTeam::where('name', 'LIKE', '%Retention%')->first();
+        // Closers NOT in retention team – available to add
+        $availableClosers = SalesCloser::where('active', true)
+            ->where(function($q) use ($retentionTeam) {
+                if ($retentionTeam) {
+                    $q->where('sales_team_id', '!=', $retentionTeam->id)
+                      ->orWhereNull('sales_team_id');
+                }
+            })
+            ->orderBy('name')
+            ->get();
+
+        // Current Retention team closers (for the remove strip)
+        $retentionClosers = $retentionTeam
+            ? SalesCloser::where('active', true)->where('sales_team_id', $retentionTeam->id)->orderBy('name')->get()
+            : collect();
+
         return view('retention.reports.team-wise', [
             'month'   => $month,
             'range'   => $range,
             'start_date' => $startDate,
             'end_date'   => $endDate,
             'teams'   => $teamData,
-            'teamBoxes' => $teamData, // Reuse for boxes
+            'teamBoxes' => $teamData,
             'clients' => $allClients,
             'canEdit' => auth()->check() && in_array(auth()->user()->email, $this->editorEmails),
             'allTeams' => $teams,
+            'availableClosers' => $availableClosers,
+            'retentionClosers' => $retentionClosers,
         ]);
+    }
+
+    public function addCloser(Request $request)
+    {
+        $canEdit = auth()->check() && in_array(auth()->user()->email, $this->editorEmails);
+        if (!$canEdit) { abort(403, 'Unauthorized'); }
+
+        $request->validate(['sales_closer_id' => 'required|exists:sales_closers,id']);
+
+        $retentionTeam = SalesTeam::where('name', 'LIKE', '%Retention%')->first();
+        if (!$retentionTeam) {
+            return redirect()->back()->with('error', 'Retention team not found.');
+        }
+
+        $closer = SalesCloser::findOrFail($request->sales_closer_id);
+        $closer->sales_team_id = $retentionTeam->id;
+        $closer->save();
+
+        return redirect()->back()->with('success', $closer->name . ' has been added to the Retention team.');
+    }
+
+    public function removeCloser(Request $request)
+    {
+        $canEdit = auth()->check() && in_array(auth()->user()->email, $this->editorEmails);
+        if (!$canEdit) { abort(403, 'Unauthorized'); }
+
+        $request->validate(['sales_closer_id' => 'required|exists:sales_closers,id']);
+
+        $closer = SalesCloser::findOrFail($request->sales_closer_id);
+        $closer->sales_team_id = null;
+        $closer->save();
+
+        return redirect()->back()->with('success', $closer->name . ' has been removed from the Retention team.');
     }
 
     public function clientWise(Request $request)
@@ -480,5 +544,90 @@ class RetentionDashboardController extends Controller
             'clients' => $clientNames,
             'totals'  => $totals,
         ]);
+    }
+
+    /**
+     * Retention Closers Attendance View
+     */
+    public function attendanceIndex(Request $request)
+    {
+        $date = $request->get('date', now('America/New_York')->toDateString());
+        $retentionTeam = SalesTeam::where('name', 'LIKE', '%Retention%')->first();
+
+        $closersQuery = SalesCloser::where('active', true);
+        if ($retentionTeam) {
+            $closersQuery->where('sales_team_id', $retentionTeam->id);
+        }
+        $closers = $closersQuery->orderBy('name')->get();
+
+        $existing = ClosersAttendance::whereDate('attendance_date', $date)
+            ->pluck('status', 'sales_closer_id');
+
+        $startOfMonth = now('America/New_York')->startOfMonth()->toDateString();
+        $endOfMonth = now('America/New_York')->toDateString();
+        $monthAttendances = ClosersAttendance::whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
+            ->whereIn('sales_closer_id', $closers->pluck('id'))
+            ->get();
+
+        $monthlySummary = [];
+        foreach ($closers as $closer) {
+            $cAtt = $monthAttendances->where('sales_closer_id', $closer->id);
+            $present = $cAtt->where('status', 'present')->unique('attendance_date')->count();
+            $halfDay = $cAtt->where('status', 'half_day')->unique('attendance_date')->count();
+            $absent = $cAtt->where('status', 'absent')->unique('attendance_date')->count();
+            $leave = $cAtt->where('status', 'leave')->unique('attendance_date')->count();
+
+            $weightedDays = $present + ($halfDay * 0.5);
+
+            $monthlySummary[] = [
+                'closer_id' => $closer->id,
+                'closer_name' => $closer->name,
+                'present' => $present,
+                'half_day' => $halfDay,
+                'absent' => $absent,
+                'leave' => $leave,
+                'weighted_days' => $weightedDays,
+            ];
+        }
+
+        $canEdit = auth()->check() && in_array(auth()->user()->email, $this->editorEmails);
+        $isCloser = auth()->check() && auth()->user()->type === 'Closer';
+
+        return view('retention.attendance', [
+            'date' => $date,
+            'closers' => $closers,
+            'existing' => $existing,
+            'monthlySummary' => $monthlySummary,
+            'canEdit' => $canEdit,
+            'isCloser' => $isCloser,
+        ]);
+    }
+
+    /**
+     * Store Retention Closers Attendance
+     */
+    public function attendanceStore(Request $request)
+    {
+        $canEdit = auth()->check() && in_array(auth()->user()->email, $this->editorEmails);
+        if (!$canEdit) {
+            abort(403, 'Unauthorized');
+        }
+
+        $data = $request->validate([
+            'date' => ['required', 'date'],
+            'status' => ['required', 'array'],
+            'status.*' => ['required', 'in:present,absent,leave,half_day'],
+        ]);
+
+        foreach ($data['status'] as $closerId => $status) {
+            ClosersAttendance::updateOrCreate(
+                ['sales_closer_id' => $closerId, 'attendance_date' => $data['date']],
+                ['status' => $status, 'marked_by' => auth()->id()]
+            );
+        }
+
+        return redirect()
+            ->route('retention.attendance.index', ['date' => $data['date']])
+            ->with('success', 'Retention attendance marked for ' . $data['date'] . '.');
     }
 }

@@ -2990,7 +2990,11 @@ Route::get('/retention-dashboard/clients', [\App\Http\Controllers\RetentionDashb
 Route::get('/retention-dashboard/reports/team-wise', [\App\Http\Controllers\RetentionDashboardController::class, 'teamWise'])->name('retention.reports.team-wise');
 Route::get('/retention-dashboard/reports/client-wise', [\App\Http\Controllers\RetentionDashboardController::class, 'clientWise'])->name('retention.reports.client-wise');
 Route::get('/retention-dashboard/reports/carrier-wise', [\App\Http\Controllers\RetentionDashboardController::class, 'carrierWise'])->name('retention.reports.carrier-wise');
+Route::get('/retention-dashboard/attendance', [\App\Http\Controllers\RetentionDashboardController::class, 'attendanceIndex'])->name('retention.attendance.index');
+Route::post('/retention-dashboard/attendance', [\App\Http\Controllers\RetentionDashboardController::class, 'attendanceStore'])->name('retention.attendance.store');
 Route::get('/retention-dashboard/sales/create', [\App\Http\Controllers\RetentionDashboardController::class, 'createSale'])->name('retention.sales.create');
 Route::post('/retention-dashboard/sales', [\App\Http\Controllers\RetentionDashboardController::class, 'storeSale'])->name('retention.sales.store');
 Route::delete('/retention-dashboard/sales/{entry}', [\App\Http\Controllers\RetentionDashboardController::class, 'destroySale'])->name('retention.sales.destroy');
+Route::post('/retention-dashboard/team-wise/add', [\App\Http\Controllers\RetentionDashboardController::class, 'addCloser'])->name('retention.teamWise.add');
+Route::post('/retention-dashboard/team-wise/remove', [\App\Http\Controllers\RetentionDashboardController::class, 'removeCloser'])->name('retention.teamWise.remove');
 

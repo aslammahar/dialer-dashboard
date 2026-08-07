@@ -22,6 +22,7 @@ class DailySalesController extends Controller
     'furqankashif@jsons.com',
     'sheikh.noman@jsonscommunication.com',
     'taimoorjanjua@mgmt.jsonscommunications.com',
+    'aslambaig@jsons.com',
         ]),
         403,
         'You do not have permission to make changes.'

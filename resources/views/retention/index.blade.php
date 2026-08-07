@@ -43,12 +43,32 @@
                 <i class="ti ti-phone-incoming"></i> Dialer Dashboard
             </a>
 
+            <a href="{{ route('retention.leaderboard') }}" class="dd-readonly-badge" style="text-decoration:none">
+                <i class="ti ti-trophy"></i> Inbound Leaderboard
+            </a>
+
+            <a href="{{ route('retention.reports.team-wise') }}" class="dd-readonly-badge" style="text-decoration:none">
+                <i class="ti ti-users"></i> Team Wise
+            </a>
+
+            <a href="{{ route('retention.reports.client-wise') }}" class="dd-readonly-badge" style="text-decoration:none">
+                <i class="ti ti-briefcase"></i> Client Wise
+            </a>
+
+            <a href="{{ route('retention.reports.carrier-wise') }}" class="dd-readonly-badge" style="text-decoration:none">
+                <i class="ti ti-truck"></i> Carrier Wise
+            </a>
+
             <a href="{{ route('retention.report') }}" class="dd-readonly-badge" style="text-decoration:none">
                 <i class="ti ti-report"></i> Retention Report
             </a>
 
             <a href="{{ route('retention.clients') }}" class="dd-readonly-badge" style="text-decoration:none">
                 <i class="ti ti-building"></i> Retention Clients
+            </a>
+
+            <a href="{{ route('retention.attendance.index') }}" class="dd-readonly-badge" style="text-decoration:none">
+                <i class="ti ti-calendar-check"></i> Attendance
             </a>
 
             @if($canEdit)
@@ -228,13 +248,9 @@
                         <th>GI</th>
                         <th>Level %</th>
                         <th>Avg Pre</th>
-                        <th class="monthly-col">M. Rewrite</th>
-                        <th class="monthly-col">M. Fixed</th>
-                        <th class="monthly-col">M. Corr</th>
-                        <th class="monthly-col">M. New Policy</th>
-                        <th class="monthly-col" style="color:#60a5fa">Monthly Total</th>
-                        <th class="monthly-col">M. Level</th>
-                        <th class="monthly-col">M. GI</th>
+                        <th class="monthly-col" style="color:#60a5fa">MTD Total</th>
+                        <th class="monthly-col">MTD Level</th>
+                        <th class="monthly-col">MTD GI</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -267,17 +283,13 @@
                             <td>{{ $row['level_pct'] }}%</td>
                             <td>${{ number_format($row['avg_pre'], 2) }}</td>
 
-                            <td class="monthly-col">{{ $row['m_rewrite'] }}</td>
-                            <td class="monthly-col">{{ $row['m_fixed'] }}</td>
-                            <td class="monthly-col">{{ $row['m_corr'] }}</td>
-                            <td class="monthly-col">{{ $row['m_new_policy'] }}</td>
                             <td class="monthly-col" style="font-weight:800;color:#60a5fa">{{ $row['m_total_sales'] }}</td>
                             <td class="monthly-col">{{ $row['m_level'] }}</td>
                             <td class="monthly-col">{{ $row['m_gi'] }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="20" style="text-align:center;color:var(--dd-text-muted);padding:24px">
+                            <td colspan="16" style="text-align:center;color:var(--dd-text-muted);padding:24px">
                                 No retention sales entries found.
                             </td>
                         </tr>
@@ -296,10 +308,6 @@
                         <td>{{ $dailyBoardTotals['gi'] }}</td>
                         <td>{{ $dailyBoardTotals['level_pct'] }}%</td>
                         <td>-</td>
-                        <td class="monthly-col">{{ $dailyBoardTotals['m_rewrite'] }}</td>
-                        <td class="monthly-col">{{ $dailyBoardTotals['m_fixed'] }}</td>
-                        <td class="monthly-col">{{ $dailyBoardTotals['m_corr'] }}</td>
-                        <td class="monthly-col">{{ $dailyBoardTotals['m_new_policy'] }}</td>
                         <td class="monthly-col" style="color:#60a5fa;font-size:16px">{{ $dailyBoardTotals['m_total_sales'] }}</td>
                         <td class="monthly-col">{{ $dailyBoardTotals['m_level'] }}</td>
                         <td class="monthly-col">{{ $dailyBoardTotals['m_gi'] }}</td>

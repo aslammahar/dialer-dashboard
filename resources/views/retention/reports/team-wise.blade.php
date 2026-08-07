@@ -41,6 +41,55 @@
     ← Back to Retention Dashboard
 </a>
 <div class="tw-wrap">
+    <!-- ── Add Closer Strip ─────────────────────────────────── -->
+    @if(isset($canEdit) && $canEdit)
+    <!-- ── Add Closer Strip ─────────────────────────────────── -->
+    <div style="background:var(--tw-surface-alt);border:1px solid var(--tw-border);border-radius:12px;padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:13px;color:var(--tw-text-sec);font-weight:600;white-space:nowrap;">➕ Add Closer:</span>
+        <form method="POST" action="{{ route('retention.teamWise.add') }}" style="display:flex;gap:8px;align-items:center;">
+            @csrf
+            <select name="sales_closer_id" class="tw-input" required style="min-width:220px;">
+                <option value="" disabled selected>Select a closer…</option>
+                @foreach($availableClosers ?? [] as $ac)
+                    <option value="{{ $ac->id }}">{{ $ac->name }}</option>
+                @endforeach
+            </select>
+            <button type="submit" class="tw-apply" style="transition:transform .15s;white-space:nowrap;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">＋ Add</button>
+        </form>
+    </div>
+
+    <!-- ── Remove Closer Strip ───────────────────────────────── -->
+    <div style="background:var(--tw-surface-alt);border:1px solid var(--tw-border);border-radius:12px;padding:14px 18px;margin-bottom:18px;">
+        <div style="font-size:13px;color:var(--tw-text-sec);font-weight:600;margin-bottom:10px;">➖ Remove Closer from Retention Team:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            @forelse($retentionClosers ?? [] as $rc)
+                <form method="POST" action="{{ route('retention.teamWise.remove') }}" style="display:inline-flex;align-items:center;">
+                    @csrf
+                    <input type="hidden" name="sales_closer_id" value="{{ $rc->id }}">
+                    <button type="submit"
+                        style="display:inline-flex;align-items:center;gap:6px;background:var(--tw-surface);border:1px solid var(--tw-border);color:var(--tw-text);border-radius:8px;padding:5px 11px;font-size:12.5px;font-family:var(--tw-font-body);cursor:pointer;transition:border-color .15s,color .15s;"
+                        onmouseover="this.style.borderColor='#e74c3c';this.style.color='#e74c3c'"
+                        onmouseout="this.style.borderColor='var(--tw-border)';this.style.color='var(--tw-text)'"
+                        onclick="return confirm('Remove {{ $rc->name }} from Retention team?')">
+                        <span>{{ $rc->name }}</span>
+                        <span style="font-size:11px;opacity:.7;">✕</span>
+                    </button>
+                </form>
+            @empty
+                <span style="color:var(--tw-text-muted);font-size:13px;">No closers currently in Retention team.</span>
+            @endforelse
+        </div>
+    </div>
+
+    @if(session('success'))
+        <div style="background:rgba(52,245,197,.12);border:1px solid #34f5c5;border-radius:10px;padding:10px 16px;margin-bottom:14px;color:#34f5c5;font-size:13px;font-weight:600;">
+            ✓ {{ session('success') }}
+        </div>
+    @endif
+    @endif
+
+
+    <!-- ── Title + Date Range ───────────────────────────────── -->
     <div class="tw-head">
         <div class="tw-title">👥 Retention Team Wise</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -68,6 +117,7 @@
             @endif
         </div>
     </div>
+
 
     @forelse($teams as $team)
         <div class="tw-team-card">

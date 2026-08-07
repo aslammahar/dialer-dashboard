@@ -33,18 +33,13 @@ class RetentionService
             ->whereBetween('entry_date', [$monthStart, $todayNY])
             ->get();
 
-        // Get active retention closers or all closers having entries
+        // Get active retention team closers
         $retentionTeam = SalesTeam::where('name', 'LIKE', '%Retention%')->first();
         $closersQuery = SalesCloser::query();
         if ($retentionTeam) {
             $closersQuery->where('sales_team_id', $retentionTeam->id);
         }
         $closers = $closersQuery->where('active', true)->get();
-
-        // Include any closer who has sales today even if not in retention team
-        $dailyCloserIds = $dailyEntries->pluck('sales_closer_id')->unique();
-        $missingClosers = SalesCloser::whereIn('id', $dailyCloserIds)->get();
-        $closers = $closers->merge($missingClosers)->unique('id');
 
         $rows = [];
         foreach ($closers as $closer) {
