@@ -2997,4 +2997,5 @@ Route::post('/retention-dashboard/sales', [\App\Http\Controllers\RetentionDashbo
 Route::delete('/retention-dashboard/sales/{entry}', [\App\Http\Controllers\RetentionDashboardController::class, 'destroySale'])->name('retention.sales.destroy');
 Route::post('/retention-dashboard/team-wise/add', [\App\Http\Controllers\RetentionDashboardController::class, 'addCloser'])->name('retention.teamWise.add');
 Route::post('/retention-dashboard/team-wise/remove', [\App\Http\Controllers\RetentionDashboardController::class, 'removeCloser'])->name('retention.teamWise.remove');
+Route::post('/retention-dashboard/team-wise/create-closer', [\App\Http\Controllers\RetentionDashboardController::class, 'createCloser'])->name('retention.teamWise.createCloser');
 

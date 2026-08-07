@@ -86,6 +86,36 @@
             ✓ {{ session('success') }}
         </div>
     @endif
+
+    <!-- ── Create New Closer Strip ──────────────────────────── -->
+    <div style="background:var(--tw-surface-alt);border:1px solid var(--tw-border);border-radius:12px;padding:14px 18px;margin-bottom:18px;">
+        <div style="font-size:13px;color:var(--tw-text-sec);font-weight:600;margin-bottom:10px;">✏️ Create New Closer (Retention Team)</div>
+        <form method="POST" action="{{ route('retention.teamWise.createCloser') }}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            @csrf
+            <input
+                type="text"
+                name="closer_name"
+                class="tw-input"
+                placeholder="Enter closer full name…"
+                required
+                style="min-width:250px;"
+            >
+            {{-- Team is pre-locked to Retention - shown as read-only badge --}}
+            <span style="background:rgba(52,245,197,.12);border:1px solid #34f5c5;color:#34f5c5;border-radius:8px;padding:5px 12px;font-size:12.5px;font-weight:600;white-space:nowrap;">
+                🏷 Retention Team
+            </span>
+            <button type="submit"
+                class="tw-apply"
+                style="white-space:nowrap;transition:transform .15s;"
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'">
+                ✚ Create Closer
+            </button>
+        </form>
+        @error('closer_name')
+            <div style="color:#e74c3c;font-size:12px;margin-top:6px;">{{ $message }}</div>
+        @enderror
+    </div>
     @endif
 
 

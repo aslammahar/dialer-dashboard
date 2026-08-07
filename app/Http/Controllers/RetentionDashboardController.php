@@ -410,6 +410,26 @@ class RetentionDashboardController extends Controller
         return redirect()->back()->with('success', $closer->name . ' has been removed from the Retention team.');
     }
 
+    public function createCloser(Request $request)
+    {
+        $canEdit = auth()->check() && in_array(auth()->user()->email, $this->editorEmails);
+        if (!$canEdit) { abort(403, 'Unauthorized'); }
+
+        $request->validate([
+            'closer_name' => 'required|string|max:100',
+        ]);
+
+        $retentionTeam = SalesTeam::where('name', 'LIKE', '%Retention%')->first();
+
+        SalesCloser::create([
+            'name'          => trim($request->closer_name),
+            'sales_team_id' => $retentionTeam?->id,
+            'active'        => true,
+        ]);
+
+        return redirect()->back()->with('success', trim($request->closer_name) . ' has been created and added to the Retention team.');
+    }
+
     public function clientWise(Request $request)
     {
         [$from, $to, $range, $month, $startDate, $endDate] = $this->resolveDateRange($request);
